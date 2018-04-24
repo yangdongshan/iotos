@@ -10,22 +10,27 @@ typedef int (*thread_main_t)(int argc, char**argv);
 
 
 typedef enum {
-    THREAD_READY = 0,
-    THREAD_PENDING,
+    THREAD_SUSPENDED = 0,
+    THREAD_READY,
     THREAD_RUNNING,
+    THREAD_PENDING,
     THREAD_SLEEPING,
     THREAD_DEAD,
 } thread_state_e;
 
 typedef struct {
-    list_head node;
+    struct list_node node;
 
-    addr_t *stack;
-    addr_t *stack_bottom;
+    addr_t *sp;
+    // assume stack grows downside
+    addr_t *sp_bottom;
     unsigned int stack_size;
 
     // priority of the thread
-    int priority;
+    unsigned int priority;
+
+    // thread sched policy
+    unsigned int sched_policy;
 
     // time slice assigned to the thread
     time_t time_slice;
@@ -43,9 +48,13 @@ typedef struct {
     unsigned long switch_count;
 #endif
 
-    unsigned int thid;
+    // thread id
+    unsigned int thread_id;
 
     thread_state_e state;
+
+    // misc flags
+    unsigned int flags;
 
     // point to the list head where the thread node is pennding
     list_head *pending_list;

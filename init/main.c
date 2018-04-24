@@ -11,5 +11,7 @@ int main()
 
     user_main();
 
+    thread_become_idle();
+
     return 0;
 }

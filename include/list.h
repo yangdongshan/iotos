@@ -19,9 +19,9 @@ struct list_node {
 
 #define LIST_INITIAL_CLEARED_VALUE() {NULL, NULL}
 
-static inline void list_initialize(struct list_node *list)
+static inline void list_head_init(struct list_node *head)
 {
-    list->prev = list->next = list;
+    head->prev = head->next = head;
 }
 
 static inline void list_clear_node(struct list_node *list)
