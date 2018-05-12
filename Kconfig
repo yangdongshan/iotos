@@ -1,0 +1,45 @@
+
+mainmenu "Phonenix Configuration"
+
+config PROJECT_NAME
+    string "project name"
+    default "phonenix"
+
+menu "Build Setup"
+
+choice
+    prompt "Build platform"
+    default LINUX_HOST
+
+config LINUX_HOST
+    bool "Linux"
+
+endchoice
+
+config CHIP
+    string "select chip"
+    default "cortex-m4"
+
+config TOOLCHAIN
+    string "build toolchain prefix"
+    default "x86_64-linux-gnu-"
+    ---help---
+        Set build toolchain prefix, for example, x86_64-linux-gnu-
+        for amd64, arm-none-eabi- for cortex-m*.
+
+endmenu # Build Setup
+
+
+
+menu "Kernel Configuartion"
+#source "kernel/Kconfig"
+endmenu # Kernel Configuration
+
+menu "Debug Options"
+config DEBUG_ASSERT
+    bool "debug assert"
+    default n
+    ---help---
+        Enable or disable debug assertion
+
+endmenu # Debug Options

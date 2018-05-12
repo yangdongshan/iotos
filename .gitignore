@@ -1,0 +1,12 @@
+
+*.o
+
+*.d
+
+kconfig/*
+
+.config*
+tags
+cscope.*
+
+
