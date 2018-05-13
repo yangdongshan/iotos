@@ -5,7 +5,7 @@
 #include <irq.h>
 
 
-struct contex_frame {
+struct context_frame {
     uint32_t r4;
     uint32_t r5;
     uint32_t r6;

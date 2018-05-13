@@ -5,19 +5,19 @@
 
 static inline void irq_enable()
 {
-    __asm__ __valotile__ ("cpsie i\n");
+    __asm__ __volatile__ ("cpsie i\n");
 }
 
 static inline void irq_disable()
 {
-    __asm__ __valotile__ ("cpsid i\n");
+    __asm__ __volatile__ ("cpsid i\n");
 }
 
 static inline irqstate_t irq_disable_state_save(void)
 {
     irqstate_t state;
 
-    __asm__ __valotile__ (
+    __asm__ __volatile__ (
             "mrs %0, primask\n"
             "cpsid i\n"
             : "=r" (state)
@@ -30,7 +30,7 @@ static inline irqstate_t irq_disable_state_save(void)
 
 static inline void irq_state_restore(irqstate_t state)
 {
-    __asm__ __valotile__ (
+    __asm__ __volatile__ (
             "tst %0, #1\n"
             "bne.n 1f\n"
             "cpsie i\n"

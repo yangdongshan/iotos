@@ -16,18 +16,16 @@ config LINUX_HOST
 
 endchoice
 
-config CHIP
-    string "select chip"
-    default "cortex-m4"
+endmenu # Build Setup
+
 
 config TOOLCHAIN
     string "build toolchain prefix"
-    default "x86_64-linux-gnu-"
+    default "arm-none-eabi-"
     ---help---
         Set build toolchain prefix, for example, x86_64-linux-gnu-
         for amd64, arm-none-eabi- for cortex-m*.
 
-endmenu # Build Setup
 
 
 

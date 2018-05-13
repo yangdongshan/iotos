@@ -2,13 +2,13 @@
 CFLAGS +=
 
 # add .c files
-CSRC:= context.c
+CSRC:=
 
 # add .S files
-ASMSRC:=
+ASMSRC:= 
 
 # add sub-directories
-MODULE:=
+MODULE:= src
 
 
 # include build.mk

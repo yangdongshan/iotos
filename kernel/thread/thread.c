@@ -2,6 +2,8 @@
 #include <thread.h>
 #include <string.h>
 
+#define to_thread_ptr(node) container_of(node, struct list_node, node)
+
 static thread_t thread_node_array[MAX_THREAD_CNT];
 
 static thread_t *thread_id_table[MAX_THREAD_CNT];
@@ -54,7 +56,6 @@ void thread_init_early(void)
     }
 }
 
-#define to_thread_ptr(node) container_of(node, struct list_node, node)
 
 static thread_t* get_free_thread_node(void)
 {
@@ -167,7 +168,14 @@ int thread_join(int thread_id)
 
 }
 
-int thread_create(const char* name, unsigned int priority, thread_main_t main_entry, void *arg, addr_t *stack, size_t stack_size, time_t time_slice, unsigned int flags)
+int thread_create(const char* name,
+                  unsigned int priority,
+                  thread_main_t main_entry,
+                  void *arg,
+                  addr_t *stack,
+                  size_t stack_size,
+                  time_t time_slice,
+                  unsigned int flags)
 {
     thread_t *thread;
 
@@ -198,5 +206,5 @@ int thread_create(const char* name, unsigned int priority, thread_main_t main_en
     thread->state = THREAD_INITIALISZED;
 
     return thread->thread_id;
-
 }
+
