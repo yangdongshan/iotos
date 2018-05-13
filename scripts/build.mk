@@ -11,11 +11,11 @@ obj: SUBMODULE $(COBJ) $(ASMOBJ)
 SUBMODULE:$(MODULE)
 	$(Q) $(foreach dir,$(MODULE),$(MAKE) -C ./$(dir) obj || exit "$$?";)
 
-%.o:%.c %.d
+%.o:%.c
 	$(Q) echo "CC -c $^ -o $@"
 	$(Q) $(CC) $(CFLAGS) -c $^ -o $@
 
-%.o:%.S %.d
+%.o:%.S
 	$(Q) echo "CC -c $< -o $@"
 	$(Q) $(CC) $(CFLAGS) -c $< -o $@
 

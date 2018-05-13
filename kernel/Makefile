@@ -15,7 +15,8 @@ MODULE:= mailbox \
          signal \
          thread \
          timer \
-         watchdog
+         watchdog \
+         mem
 
 
 # include build.mk

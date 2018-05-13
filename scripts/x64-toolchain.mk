@@ -30,10 +30,6 @@ CFLAGS := -Wall \
 		  -MT -MP -MD \
 		  -nostdlib
 
-CFLAGS += -I$(ROOTDIR)/include \
-		  -I$(ROOTDIR)/include/driver \
-		  -I$(ROOTDIR)/libc/include
-
 ARFLAGS := rcs
 
 LDFLAGS := -z max-page-size=4096
