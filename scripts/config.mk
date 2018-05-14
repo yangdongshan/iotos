@@ -23,13 +23,10 @@ LD := $(TOOLCHAIN)ld
 export LD
 
 OBJCOPY := $(TOOLCHAIN)objcopy
-export OBJCOPY
 
 NM := $(TOOLCHAIN)nm
-export NM
 
 SIZE := $(TOOLCHAIN)size
-export SIZE
 
 CFLAGS := -Wall \
           -O2 \
@@ -55,3 +52,8 @@ LDFLAGS := -nostartfiles \
 
 
 LINKER_FILE := $(ROOTDIR)/arch/boot/src/stm32_flash.ld
+
+
+ST_FLASH := st-flash
+FLASH_BASEADDR := 0x8000000
+

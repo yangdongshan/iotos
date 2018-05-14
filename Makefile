@@ -125,4 +125,4 @@ launch_qemu: $(ISO)
 	$(Q) $(QEMU) -cdrom $(ISO) -nographic #-enable-kvm
 
 download:
-	$(Q) st-flash
+	$(Q) st-flash --reset write arch/boot/iotos.bin 0x8000000
