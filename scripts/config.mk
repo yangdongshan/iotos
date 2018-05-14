@@ -1,3 +1,4 @@
+PROJNAME := iotos
 
 ARCH := cortex-m4
 
@@ -21,6 +22,15 @@ export AR
 LD := $(TOOLCHAIN)ld
 export LD
 
+OBJCOPY := $(TOOLCHAIN)objcopy
+export OBJCOPY
+
+NM := $(TOOLCHAIN)nm
+export NM
+
+SIZE := $(TOOLCHAIN)size
+export SIZE
+
 CFLAGS := -Wall \
           -O2 \
           -g \
@@ -41,7 +51,7 @@ CFLAGS := -Wall \
 ARFLAGS := rcs
 
 LDFLAGS := -nostartfiles \
-           -Wl,--gc-seticons \
-           -mthumb \
-           -mcpu=cortex-m4
+           -nodefaultlibs \
 
+
+LINKER_FILE := $(ROOTDIR)/arch/boot/src/stm32_flash.ld

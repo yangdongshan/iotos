@@ -20,8 +20,6 @@ export SCRIPTSDIR
 # include config
 -include $(SCRIPTSDIR)/config.mk
 
-PROJNAME ?= CONFIG_PROJECT_NAME 
-
 KCONFIGDIR = $(ROOTDIR)/kconfig
 KCONFIGFILE = $(ROOTDIR)/Kconfig
 
@@ -32,10 +30,6 @@ ARFLAGS +=
 
 LDFLAGS +=
 
-
-LINKER_LD := $(ROOTDIR)/boot/linker.ld
-GRUB_CFG := $(ROOTDIR)/tools/grub.cfg
-
 ARCH_CHIP_DIR := arch/chip
 ARCH_BOARD_DIR := arch/board
 ARCH_BOOT_DIR := arch/boot
@@ -44,14 +38,14 @@ ARCH_BOOT_DIR := arch/boot
 LIBDIR := arch/chip \
           arch/board \
 		  init \
-		  kernel \
 		  libc
+#LIBDIR += kernel
 
 LIBS = $(addprefix $(ROOTDIR)/,$(foreach dir, $(LIBDIR), $(dir)/lib$(dir).a))
 export LIBS
 
 LDDIR += $(addprefix -L$(ROOTDIR)/,$(LIBDIR))
-LDLIB += $(addprefix -l,$(LIBDIR))
+LDLIB += $(addprefix -l,$(foreach dir, $(LIBDIR), $(shell basename $(dir))))
 
 CFLAGS += -I$(ROOTDIR)/$(ARCH_CHIP_DIR)/include \
 		  -I$(ROOTDIR)/$(ARCH_CHIP_DIR)/peripherals/include \
@@ -66,22 +60,43 @@ export CFLAGS
 export ARFLAGS
 export LDFLAGS
 
-ELF=$(ROOTDIR)/$(PROJNAME).elf
+ELF=$(ROOTDIR)/$(ARCH_BOOT_DIR)/$(PROJNAME).elf
+HEX=$(ROOTDIR)/$(ARCH_BOOT_DIR)/$(PROJNAME).hex
+BIN=$(ROOTDIR)/$(ARCH_BOOT_DIR)/$(PROJNAME).bin
+SREC=$(ROOTDIR)/$(ARCH_BOOT_DIR)/$(PROJNAME).srec
+MAP=$(ROOTDIR)/$(ARCH_BOOT_DIR)/$(PROJNAME).map
 
 all: $(ELF)
 
-$(ELF): link_dir lib
-	#$(Q) $(MAKE) -C $(ARCH_BOOT_DIR) binary elf=$@ linker_file=$(LINKER_LD)
+$(ELF): flink lib
+	$(Q) $(MAKE) -C $(ARCH_BOOT_DIR) exe elf=$@ linker_file=$(LINKER_FILE)
+	$(Q) echo "OBJCOPY $(HEX)"
+	$(Q) $(OBJCOPY) -O ihex $@ $(HEX)
+	$(Q) echo "OBJCOPY $(BIN)"
+	$(Q) $(OBJCOPY) -O binary $@ $(BIN)
+	$(Q) echo "OBJCOPY $(SREC)"
+	$(Q) $(OBJCOPY) -O srec $@ $(SREC)
+	$(Q) echo "NM $(MAP)"
+	$(Q) $(NM) -s -S $(ELF) > $(MAP)
+	$(Q) echo "================================================"
+	$(Q) $(SIZE) -t $(ELF)
+	$(Q) echo "================================================"
 
-link_dir:
-	$(Q) if [ ! -e $(ARCH_CHIP_DIR) ]; then cp -r arch/$(ARCH)/$(CHIP)/chip $(ARCH_CHIP_DIR); fi
-	$(Q) if [ ! -e $(ARCH_BOARD_DIR) ]; then cp -r arch/$(ARCH)/$(CHIP)/$(BOARD) $(ARCH_BOARD_DIR); fi
-	$(Q) if [ ! -e $(ARCH_BOOT_DIR) ]; then cp -r arch/$(ARCH)/$(CHIP)/boot $(ARCH_BOOT_DIR); fi
+flink:
+	$(Q) if [ ! -d $(ARCH_CHIP_DIR) ]; then \
+			cd arch; ln -s $(ARCH)/$(CHIP)/chip chip; cd ../; \
+		 fi
+	$(Q) if [ ! -d $(ARCH_BOARD_DIR) ]; then \
+			cd arch; ln -s $(ARCH)/$(CHIP)/$(BOARD) board; cd ../; \
+		 fi
+	$(Q) if [ ! -d $(ARCH_BOOT_DIR) ]; then \
+		    cd arch; ln -s $(ARCH)/$(CHIP)/boot boot; cd ../; \
+		 fi
 
 lib: $(LIBDIR)
 	$(Q) $(foreach dir, $(LIBDIR), \
 		$(MAKE) -C $(dir) obj || exit "$$?";\
-		$(MAKE) -C $(dir) lib libname=lib$(dir).a || exit "$$?";)
+		$(MAKE) -C $(dir) lib libname=lib$(shell basename $(dir)).a || exit "$$?";)
 
 
 .PHONY: menuconfig distclean silentoldconfig clean launch_qemu download
@@ -99,10 +114,10 @@ silentoldconfig: $(KCONFIGDIR)/conf
 
 clean:
 	$(Q) $(foreach dir, $(ARCH_BOOT_DIR) $(LIBDIR), $(MAKE) -C $(dir) clean;)
-	$(Q) -rm -f $(ELF) $(ISO)
+	$(Q) -rm -f $(ELF) $(HEX) $(BIN) $(SREC) $(MAP)
 
 distclean: clean
-	$(Q) $(MAKE) -C $(KCONFIGDIR) clean
+	#$(Q) $(MAKE) -C $(KCONFIGDIR) clean
 	$(Q) -rm -rf $(ARCH_CHIP_DIR) $(ARCH_BOARD_DIR) $(ARCH_BOOT_DIR)
 	$(Q) -rm -rf include/generated include/config .config
 
@@ -110,4 +125,4 @@ launch_qemu: $(ISO)
 	$(Q) $(QEMU) -cdrom $(ISO) -nographic #-enable-kvm
 
 download:
-	$(Q) st-flash 
+	$(Q) st-flash

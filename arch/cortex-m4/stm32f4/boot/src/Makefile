@@ -2,13 +2,14 @@
 CFLAGS +=
 
 # add .c files
-CSRC:=
+CSRC:= system_stm32f4xx.c \
+       stm32f4xx_it.c
 
 # add .S files
-ASMSRC:=
+ASMSRC:= startup_stm32f4xx.S
 
 # add sub-directories
-MODULE:= src
+MODULE:=
 
 
 # include build.mk

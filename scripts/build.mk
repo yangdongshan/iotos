@@ -19,7 +19,7 @@ SUBMODULE:$(MODULE)
 	$(Q) echo "CC -c $< -o $@"
 	$(Q) $(CC) $(CFLAGS) -c $< -o $@
 
-.PHONY: clean lib binary
+.PHONY: clean lib exe
 
 LIB_OBJS=$(shell find $(CUR_DIR) -name "*.o")
 
@@ -27,9 +27,9 @@ lib:
 	$(Q) echo "AR $(libname) $(LIB_OBJS)"
 	$(Q) $(AR) $(ARFLAGS) $(libname) $(LIB_OBJS)
 
-binary: obj $(LIB_OBJS)
-	$(Q) echo "Linking $(elf)..."
-	$(Q) $(LD) -n -d -T $(linker_file) $(LDFLAGS) $(LDDIR) -o $(elf) $(LIB_OBJS) --start-group $(LDLIB) --end-group
+exe: obj $(LIB_OBJS)
+	$(Q) echo "Linking $(elf) ..."
+	$(Q) $(LD) -T $(linker_file) $(LDFLAGS) $(LDDIR) -o $(elf) $(LIB_OBJS) --start-group $(LDLIB) --end-group
 
 clean:
 	$(Q) $(foreach dir,$(MODULE),$(MAKE) -C ./$(dir) clean || exit "$$?";)
