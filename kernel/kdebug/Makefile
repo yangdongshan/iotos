@@ -2,8 +2,7 @@
 CFLAGS +=
 
 # add .c files
-CSRC:= context.c \
-       arch_debug.c
+CSRC:= kdebug.c
 
 # add .S files
 ASMSRC:=

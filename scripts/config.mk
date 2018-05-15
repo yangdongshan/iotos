@@ -43,12 +43,13 @@ CFLAGS := -Wall \
           -mfloat-abi=hard \
           -finline \
           -MT -MP -MD \
-          -nostdlib
 
 ARFLAGS := rcs
 
 LDFLAGS := -nostartfiles \
            -nodefaultlibs \
+           -share -fsingle-precision-constant \
+		   -nostdlib
 
 
 LINKER_FILE := $(ROOTDIR)/arch/boot/src/stm32_flash.ld

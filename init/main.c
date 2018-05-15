@@ -1,4 +1,6 @@
-#include <stm32f4xx_conf.h> 
+#include <types.h>
+#include <kdebug.h>
+#include <stm32f4xx_conf.h>
 
 
 void ms_delay(int ms)
@@ -11,8 +13,19 @@ void ms_delay(int ms)
     }
 }
 
+const extern void *_ebss;
+const extern void *_estack;
+const size_t boot_stack_size = 0x400;
+size_t init_heap(void *start_ptr)
+{
+    *(addr_t*)start_ptr = (addr_t)_ebss;
+    return  (addr_t)_estack - boot_stack_size;
+}
+
+
 int os_start()
 {
+    KDBG(INFO, "%s\n", __func__);
     GPIO_InitTypeDef GPIO_InitStructure;
 
     //arch_init();

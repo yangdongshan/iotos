@@ -39,7 +39,7 @@ LIBDIR := arch/chip \
           arch/board \
 		  init \
 		  libc
-#LIBDIR += kernel
+LIBDIR += kernel
 
 LIBS = $(addprefix $(ROOTDIR)/,$(foreach dir, $(LIBDIR), $(dir)/lib$(dir).a))
 export LIBS
@@ -50,8 +50,10 @@ LDLIB += $(addprefix -l,$(foreach dir, $(LIBDIR), $(shell basename $(dir))))
 CFLAGS += -I$(ROOTDIR)/$(ARCH_CHIP_DIR)/include \
 		  -I$(ROOTDIR)/$(ARCH_CHIP_DIR)/peripherals/include \
 		  -I$(ROOTDIR)/$(ARCH_BOOT_DIR)/include \
+          -I$(ROOTDIR)/kernel/include \
           -I$(ROOTDIR)/include \
           -I$(ROOTDIR)/libc/include
+
 
 export LDDIR
 export LDLIB

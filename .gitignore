@@ -3,10 +3,11 @@
 
 *.d
 
+
 kconfig/*
 
 .config*
-tags
-cscope.*
+.cscope.*
+.tags
 
 

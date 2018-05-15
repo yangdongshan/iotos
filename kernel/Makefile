@@ -8,15 +8,17 @@ CSRC:=
 ASMSRC:=
 
 # add sub-directories
-MODULE:= mailbox \
-         mutex \
-         sched \
-         semphore \
-         signal \
-         thread \
-         timer \
-         watchdog \
-         mem
+MODULE :=
+#MODULE:= mailbox
+#MODULE += mutex
+#MODULE += sched
+#MODULE += semphore
+#MODULE += signal
+#MODULE += thread
+#MODULE += timer
+#MODULE += watchdog
+#MODULE += mem
+MODULE += kdebug
 
 
 # include build.mk
