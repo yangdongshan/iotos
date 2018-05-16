@@ -3,6 +3,7 @@ CFLAGS +=
 
 # add .c files
 CSRC:= context.c \
+       arch_init.c \
        arch_debug.c
 
 # add .S files

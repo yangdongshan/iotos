@@ -4,8 +4,9 @@
 #include <types.h>
 #include <arch_debug.h>
 
-typedef int (*print_func)(char *str, size_t len);
+typedef int (*print_func)(const char *str, int len);
 
+int kdebug_print(const char *fmt, ...);
 
 enum {
     ERR = 0,

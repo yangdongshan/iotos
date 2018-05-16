@@ -27,18 +27,18 @@ CSRC +=	stm32f4xx_pwr.c
 CSRC +=	stm32f4xx_rcc.c
 CSRC +=	stm32f4xx_rng.c
 CSRC +=	stm32f4xx_rtc.c
-CSRC +=	stm32f4xx_sdio.c 
-CSRC +=	stm32f4xx_spi.c 
+CSRC +=	stm32f4xx_sdio.c
+CSRC +=	stm32f4xx_spi.c
 CSRC +=	stm32f4xx_syscfg.c
 CSRC +=	stm32f4xx_tim.c
 CSRC +=	stm32f4xx_usart.c
 CSRC +=	stm32f4xx_wwdg.c
 
 # add .S files
-ASMSRC:= 
+ASMSRC:=
 
 # add sub-directories
-MODULE:= 
+MODULE:=
 
 
 # include build.mk

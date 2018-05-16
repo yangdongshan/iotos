@@ -1,5 +1,5 @@
 # add extra CFLAGS
-CFLAGS +=
+CFLAGS += -Wno-misleading-indentation
 
 # add .c files
 CSRC:= system_stm32f4xx.c \

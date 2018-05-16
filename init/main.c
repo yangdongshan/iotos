@@ -1,5 +1,6 @@
 #include <types.h>
 #include <kdebug.h>
+#include <arch.h>
 #include <stm32f4xx_conf.h>
 
 
@@ -25,10 +26,11 @@ size_t init_heap(void *start_ptr)
 
 int os_start()
 {
-    KDBG(INFO, "%s\n", __func__);
     GPIO_InitTypeDef GPIO_InitStructure;
 
     //arch_init();
+
+    //KDBG(INFO, "%s\n", __func__);
 
     //board_init();
 
