@@ -30,12 +30,17 @@ int os_start()
 
     arch_init();
 
-    KDBG(INFO, "*** welcomg to iotos ***\n");
+    KDBG(INFO, "*** welcome to iotos *** \r\n");
 
     //board_init();
+    
+    KDBG(INFO, "init heap\r\n");
     heap_init();
+    //KDBG(INFO, "add %p, size 0x%x to heap mem region\r\n",
+     //       _ebss, (_estack - boot_stack_size));
     heap_add_mem_region(_ebss, (size_t)(_estack - boot_stack_size));
 
+    KDBG(INFO, "os_init\r\n");
     //os_init();
 
     //user_main();

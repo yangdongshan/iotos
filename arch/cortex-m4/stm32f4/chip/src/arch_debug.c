@@ -15,9 +15,10 @@ void arch_debug_init(void)
 	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_2; //TX
-	GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_3; //RX
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
+	GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_3; //RX
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_USART2);
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
@@ -34,17 +35,31 @@ void arch_debug_init(void)
 
 	USART_Cmd(USART2, ENABLE);
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+}
 
+
+void USART_PutChar(USART_TypeDef* USARTx, char c)
+{
+    USART_SendData(USARTx, (uint8_t)c);
+
+    while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
 }
 
 int arch_debug_print(const char *str, int len)
 {
     size_t i = 0;
+    char c;
 
-    for (i = 0; i < len; i++) {
-	    USART_SendData(USART2, (uint8_t) *str++);
+    for (; ;) {
+        if (*str == '\n')
+            USART_PutChar(USART2, '\r');
 
-	    while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
+        USART_PutChar(USART2, *str++);
+
+        i++;
+
+        if (i >= len)
+            break;
     }
 
 	return i;

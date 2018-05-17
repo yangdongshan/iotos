@@ -33,10 +33,11 @@ enum {
 #define KERNEL_DEBUG_LEVLE ERR
 #endif
 
+//kdebug_print("["#level"]: "#fmt, ##args);
 #define KDBG(level, fmt, args...) \
     do { \
         if (level <= KERNEL_DEBUG_LEVLE) { \
-            kdebug_print("["#level"]:"#fmt, ##args); \
+            kdebug_print("["#level"] "fmt, ##args); \
         } \
     } while (0)
 
