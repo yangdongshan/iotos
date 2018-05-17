@@ -1,6 +1,8 @@
 #include <arch_debug.h>
 
-void arch_init()
+int arch_init(void)
 {
     arch_debug_init();
+
+    return 0;
 }

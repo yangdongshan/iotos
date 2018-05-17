@@ -1,0 +1,31 @@
+config KERNEL_DEBUG
+    bool "kernel debug Configuartion"
+    default y
+
+if KERNEL_DEBUG
+choice
+    prompt "kernel debug level"
+    default KERNEL_DEBUG_LEVEL_INFO
+    depends on KERNEL_DEBUG
+
+config KERNEL_DEBUG_LEVEL_ERR
+    bool "kernel debug level err"
+
+config KERNEL_DEBUG_LEVEL_WARN
+    bool "kernel debug level warning"
+
+config KERNEL_DEBUG_LEVEL_INFO
+    bool "kernel debug level info"
+
+config KERNEL_DEBUG_LEVEL_DEBUG
+    bool "kernel debug level debug"
+endchoice
+
+endif
+
+config KERNEL_ASSERT
+    bool "kernel assert"
+    default y
+    ---help---
+        Enable or disable debug assertion
+

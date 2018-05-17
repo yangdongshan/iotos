@@ -46,14 +46,24 @@ static char *longlong_to_string(char *buf,
     buf[--pos] = 0;
 
     /* only do the math if the number is >= 10 */
-    while (n >= 10) {
-        int digit = n % 10;
-
-        n /= 10;
+    union {
+        unsigned int ui[2];
+        unsigned long long ull;
+    } union_ull;
+    union_ull.ull = n;
+    int digit;
+    while (union_ull.ui[0] >= 10) {
+        digit = union_ull.ui[0] % 10;
+        union_ull.ui[0] /= 10;
 
         buf[--pos] = digit + '0';
     }
-    buf[--pos] = n + '0';
+    while (union_ull.ui[1] > 0) {
+        digit = union_ull.ui[1] % 10;
+        union_ull.ui[1] /= 10;
+
+        buf[--pos] = digit + '0';
+    }
 
     if (negative)
         *signchar = '-';

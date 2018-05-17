@@ -2,7 +2,8 @@
 CFLAGS +=
 
 # add .c files
-CSRC:= mem.c
+CSRC:= mem.c \
+       heap.c
 
 # add .S files
 ASMSRC:=

@@ -17,7 +17,7 @@ MODULE :=
 #MODULE += thread
 #MODULE += timer
 #MODULE += watchdog
-#MODULE += mem
+MODULE += mem
 MODULE += kdebug
 
 
