@@ -1,7 +1,6 @@
 #ifndef __KDEBUG_H
 #define __KDEBUG_H
 
-#include <types.h>
 #include <arch_debug.h>
 
 typedef int (*print_func)(const char *str, int len);

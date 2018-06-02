@@ -3,12 +3,16 @@
 
 #define NO_ERR  (0)
 
-#define ERR_NO_FREE_THREAD_NODE
+typedef enum {
+    NO_ERR = 0,
 
-#define ERR_INVALID_THREAD_ID
+    ERR_NO_FREE_THREAD_NODE,
 
-#define ERR_SUSPEDN_IDLE_THREAD
+    ERR_INVALID_THREAD_ID,
 
+    ERR_SUSPEDN_IDLE_THREAD,
+
+} errno_t;
 
 #endif // __ERRNO_H
 

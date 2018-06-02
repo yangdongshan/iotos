@@ -3,7 +3,9 @@ CFLAGS +=
 
 # add .c files
 CSRC:= mem.c \
-       heap.c
+       umm_integrity.c \
+	   umm_malloc.c \
+	   umm_poison.c \
 
 # add .S files
 ASMSRC:=

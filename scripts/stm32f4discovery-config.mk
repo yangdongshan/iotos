@@ -2,7 +2,7 @@ PROJNAME := iotos
 
 ARCH := cortex-m4
 
-CHIP := stm32f4
+CHIP_FAMILY := stm32f4
 
 BOARD := stm32f429discovery
 
@@ -36,10 +36,10 @@ CFLAGS := -Wall \
           -mcpu=cortex-m4 \
           -mfloat-abi=hard \
           -mfpu=fpv4-sp-d16 \
-          -ffreestanding \
           -Wdouble-promotion \
           -finline \
-          -MT -MP -MD \
+          -MT -MP -MD 
+          #-ffreestanding \
 
 ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),0)
 	CFLAGS += -O0
@@ -56,11 +56,8 @@ endif
 ARFLAGS := rcs
 
 LDFLAGS := -nostartfiles \
-           -nodefaultlibs \
-		   -nostdlib
 
-
-LINKER_FILE := $(ROOTDIR)/arch/boot/src/stm32_flash.ld
+LINKER_FILE := $(ROOTDIR)/arch/$(ARCH)/$(CHIP_FAMILY)/boot/src/stm32_flash.ld
 
 
 ST_FLASH := st-flash

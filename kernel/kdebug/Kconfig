@@ -5,7 +5,7 @@ config KERNEL_DEBUG
 if KERNEL_DEBUG
 choice
     prompt "kernel debug level"
-    default KERNEL_DEBUG_LEVEL_INFO
+    default KERNEL_DEBUG_LEVEL_DEBUG
     depends on KERNEL_DEBUG
 
 config KERNEL_DEBUG_LEVEL_ERR

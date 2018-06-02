@@ -1,8 +1,33 @@
 #ifndef __THREAD_H
 #define __THREAD_H
 
-#include <types.h>
+#include <type_def.h>
 #include <list.h>
+
+
+#ifndef CONFIG_MAX_THREAD_NAME_LEN
+#define MAX_THREAD_NAME_LEN (32)
+#else
+#define MAX_THREAD_NAME_LEN CONFIG_MAX_THREAD_NAME_LEN
+#endif
+
+#ifndef CONFIG_MAX_THREAD_CNT
+#define MAX_THREAD_CNT (32)
+#else
+#define MAX_THREAD_CNT CONFIG_MAX_THREAD_CNT
+#endif
+
+#ifndef CONFIG_MIN_THREAD_CNT
+#define MIN_THREAD_CNT (3)
+#else
+#define MIN_THREAD_CNT CONFIG_MIN_THREAD_CNT
+#endif
+
+#define MAX_THREAD_ID (MAX_THREAD_CNT - 1)
+
+#define IDLE_THREAD_ID (-1)
+
+#define MAX_THREAD_PRIORITY (MAX_THREAD_ID)
 
 typedef int (*thread_start_t)(void);
 
@@ -35,9 +60,9 @@ typedef struct tcb {
     unsigned int sched_policy;
 
     // time slice assigned to the thread
-    time_t time_slice;
+    tick_t time_slice;
     // remain time for the thread
-    time_t time_remain;
+    tick_t time_remain;
 
     // thread entry point
     thread_start_t start_entry;
@@ -61,16 +86,16 @@ typedef struct tcb {
     unsigned int flags;
 
     // point to the list head where the thread node is pennding
-    list_head *pending_list;
+    list_head_t *pending_list;
 
-    list_head wait_thread_list;
+    list_head_t wait_thread_list;
 
     unsigned int exit_code;
 
     unsigned char name[MAX_THREAD_NAME_LEN];
 } thread_t;
 
-int thread_create(const char* name, unsigned int priority, thread_main_t main_entry, void *arg, addr_t *stack, size_t stack_size, time_t time_slice, unsigned int flags);
+int thread_create(const char* name, unsigned int priority, thread_main_t main_entry, void *arg, addr_t *stack, size_t stack_size, tick_t time_slice, unsigned int flags);
 
 int thread_assume(int thid);
 

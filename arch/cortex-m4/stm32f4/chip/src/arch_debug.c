@@ -1,5 +1,5 @@
 
-#include <types.h>
+#include <type_def.h>
 #include <stm32f4xx_conf.h>
 
 void arch_debug_init(void)
@@ -45,6 +45,18 @@ void USART_PutChar(USART_TypeDef* USARTx, char c)
     while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
 }
 
+int USART_PutStr(USART_TypeDef* USARTx, const char *str)
+{
+    int i=0;
+
+    while (*str != '\0') {
+        USART_PutChar(USARTx, *str++);
+        i++;
+    }
+
+    return i;
+}
+
 int arch_debug_print(const char *str, int len)
 {
     size_t i = 0;
@@ -64,3 +76,36 @@ int arch_debug_print(const char *str, int len)
 
 	return i;
 }
+
+int _write(int fd, const char *str, int len)
+{
+    size_t i = 0;
+    char c;
+
+    if (fd > 2) {
+        USART_PutStr(USART2, "Invalide fd");
+        return -1;
+    }
+
+    for (; ;) {
+        if (*str == '\n')
+            USART_PutChar(USART2, '\r');
+
+        USART_PutChar(USART2, *str++);
+
+        i++;
+
+        if (i >= len)
+            break;
+    }
+
+	return i;
+}
+
+int putchar(const char ch)
+{
+    USART_PutChar(USART2, ch);
+
+    return (int)ch;
+}
+

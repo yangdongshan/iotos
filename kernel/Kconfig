@@ -3,3 +3,16 @@
 config BOOT_STACK_SIZE
     hex "boot stack size"
     default 0x400
+
+
+menu "Thread properties"
+
+config MAX_THREADM_NAME_LEN
+    int "thread name length"
+    default 32
+
+config MAX_THREAD_CNT
+    int "max thread count supported"
+    default 32
+
+endmenu

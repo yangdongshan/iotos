@@ -3,8 +3,18 @@
 
 *.d
 
+*.a
+
+*.bin
+*.elf
+*.hex
+*.map
+*srec
 
 kconfig/*
+
+include/config/*
+include/generated/*
 
 .config*
 .cscope.*

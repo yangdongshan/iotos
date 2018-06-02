@@ -1,8 +1,9 @@
-#include <types.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <kdebug.h>
+#include <stdio.h>
 
 #define LONGFLAG       0x00000001
 #define LONGLONGFLAG   0x00000002
@@ -52,12 +53,13 @@ static char *longlong_to_string(char *buf,
     } union_ull;
     union_ull.ull = n;
     int digit;
-    while (union_ull.ui[0] >= 10) {
+    while (union_ull.ui[0] > 0) {
         digit = union_ull.ui[0] % 10;
         union_ull.ui[0] /= 10;
 
         buf[--pos] = digit + '0';
     }
+
     while (union_ull.ui[1] > 0) {
         digit = union_ull.ui[1] % 10;
         union_ull.ui[1] /= 10;

@@ -8,7 +8,7 @@ CSRC:=
 ASMSRC:=
 
 # add sub-directories
-MODULE:= src \
+MODULE:= mem_test
 
 
 # include build.mk

@@ -84,13 +84,13 @@ int memcmp(const void *src1, const char *src2, size_t n)
 
 void* memcpy(void *dst, const void *src, size_t n)
 {
-    uint8_t *p1, *p2;
+    uint8_t *d, *s;
 
-    p1 = (uint8_t*)dst;
-    p2 = (uint8_t*)src;
+    d = (uint8_t*)dst;
+    s = (uint8_t*)src;
 
     while (n-- > 0) {
-        *p1++ = *p2++;
+        *d++ = *s++;
     }
 
     return dst;
@@ -108,3 +108,14 @@ void *memset(void *dst, int pat, size_t n)
     return dst;
 }
 
+void *memmove(void *dst, const void *src, size_t n)
+{
+    uint8_t *d = dst;
+    uint8_t *s = src;
+
+    while (n--) {
+        *d++ = *s++;
+    }
+
+    return dst;
+}

@@ -5,7 +5,7 @@ CFLAGS +=
 CSRC:= board.c
 
 # add .S files
-ASMSRC:= 
+ASMSRC:=
 
 # add sub-directories
 MODULE:=

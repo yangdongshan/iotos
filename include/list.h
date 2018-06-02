@@ -1,7 +1,7 @@
 #ifndef __LIST_H
 #define __LIST_H
 
-#include <types.h>
+#include <type_def.h>
 
 #define offset_of(type, member) \
     ((unsigned long) &((s *) 0)->m)
@@ -14,6 +14,8 @@ struct list_node {
     struct list_node *prev;
     struct list_node *next;
 };
+
+typedef struct list_node list_head_t;
 
 #define LIST_INITIAL_VALUE(list) {&(list), &(list)}
 
