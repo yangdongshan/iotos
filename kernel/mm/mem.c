@@ -1,10 +1,11 @@
-#include <mem.h>
+#include <mm.h>
 #include <kdebug.h>
 #include <string.h>
 
 #include "umm_malloc.h"
+#include "umm_malloc_cfg.h"
 
-void mem_init(void *start, size_t size)
+void mm_init(const void *start, size_t size)
 {
     umm_init(start, size);
 }
@@ -27,6 +28,11 @@ void *mm_realloc(void *ptr, size_t size)
 void  mm_free(void *ptr)
 {
     umm_free(ptr);
+}
+
+void *mm_info(void)
+{
+    return umm_info(NULL);
 }
 
 size_t mm_free_size()

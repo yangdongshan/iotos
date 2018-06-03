@@ -17,7 +17,7 @@
 
 UMM_HEAP_INFO ummHeapInfo;
 
-void *umm_info( void *ptr, int force ) {
+void *umm_info( void *ptr) {
 
   unsigned short int blockNo = 0;
 
@@ -145,7 +145,7 @@ void *umm_info( void *ptr, int force ) {
 
 size_t umm_free_heap_size( void )
 {
-  umm_info(NULL, 0);
+  umm_info(NULL);
   return (size_t)ummHeapInfo.freeBlocks * sizeof(umm_block);
 }
 

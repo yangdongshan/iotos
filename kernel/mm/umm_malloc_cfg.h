@@ -52,33 +52,47 @@ extern char test_umm_heap[];
 
 #include <kdebug.h>
 
-#define UMM_DEBUG_ENABLE
+#define LEVLE_NONE 0
+#define LEVEL_ERROR 1
+#define LEVEL_FORCE 2
+#define LEVEL_TRACE 3
+#define LEVEL_DEBUG 4
 
-#ifdef UMM_DEBUG_ENABLE
+#define UMM_DEBUG_LEVEL LEVEL_FORCE
+
+#if (UMM_DEBUG_LEVEL >= LEVEL_DEBUG)
 #define UMM_DEBUG(fmt, args...) \
     do { \
-        kdebug_print("[umm_debug]: " fmt, ##args); \
+        kdebug_print("[umm_debug] " fmt, ##args); \
     } while (0)
+# else
+#define UMM_DEBUG(fmt, args...)
+#endif
 
+#if (UMM_DEBUG_LEVEL >= LEVEL_TRACE)
 #define UMM_TRACE(fmt, args...) \
     do { \
-        kdebug_print("[umm_trace]: " fmt, ##args); \
+        kdebug_print("[umm_trace] " fmt, ##args); \
     } while (0)
+#else
+#define UMM_TRACE(fmt, args...)
+#endif
 
+#if (UMM_DEBUG_LEVEL >= LEVEL_FORCE)
 #define UMM_FORCE(fmt, args...) \
     do { \
-        kdebug_print("[umm_trace]: " fmt, ##args); \
+        kdebug_print("[umm_force] " fmt, ##args); \
     } while (0)
+#else
+#define UMM_FORCE(fmt, args...)
+#endif
 
+#if (UMM_DEBUG_LEVEL >= LEVEL_ERROR)
 #define UMM_ERROR(fmt, args...) \
     do { \
-        kdebug_print("[umm_trace]: " fmt, ##args); \
+        kdebug_print("[umm_error] " fmt, ##args); \
     } while (0)
-
 #else
-#define UMM_DEBUG(fmt, args...)
-#define UMM_TRACE(fmt, args...)
-#define UMM_FORCE(fmt, args...)
 #define UMM_ERROR(fmt, args...)
 #endif
 
@@ -111,7 +125,7 @@ extern char test_umm_heap[];
 
   extern UMM_HEAP_INFO ummHeapInfo;
 
-  void *umm_info( void *ptr, int force );
+  void *umm_info( void *ptr);
   size_t umm_free_heap_size( void );
 
 #else
@@ -126,9 +140,13 @@ extern char test_umm_heap[];
  * NOTE WELL that these macros MUST be allowed to nest, because umm_free() is
  * called from within umm_malloc()
  */
+#include <type_def.h>
+#include <kernel.h>
+#define UMM_CRITICAL_ENTRY() \
+      irqstate_t state;  \
+      state = enter_critical_section()
 
-#define UMM_CRITICAL_ENTRY()
-#define UMM_CRITICAL_EXIT()
+#define UMM_CRITICAL_EXIT() leave_critical_section(state)
 
 /*
  * -D UMM_INTEGRITY_CHECK :

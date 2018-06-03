@@ -2,6 +2,7 @@
 #define __THREAD_H
 
 #include <type_def.h>
+#include <context.h>
 #include <list.h>
 
 
@@ -25,9 +26,10 @@
 
 #define MAX_THREAD_ID (MAX_THREAD_CNT - 1)
 
-#define IDLE_THREAD_ID (-1)
+#define IDLE_THREAD_ID (0)
 
-#define MAX_THREAD_PRIORITY (MAX_THREAD_ID)
+#define LOWEST_THREAD_PRIORITY (MAX_THREAD_CNT - 1)
+#define HIGHEST_THREAD_PRIORITY (0)
 
 typedef int (*thread_start_t)(void);
 
@@ -35,8 +37,6 @@ typedef int (*thread_main_t)(int argc, char**argv);
 
 
 typedef enum {
-    THREAD_UNINITIALIZED = 0,
-    THREAD_INITIALIZED,
     THREAD_SUSPENDED,
     THREAD_READY,
     THREAD_RUNNING,
@@ -45,7 +45,7 @@ typedef enum {
     THREAD_DEAD,
 } thread_state_e;
 
-typedef struct tcb {
+typedef struct thread {
     struct list_node node;
 
     addr_t *sp;
@@ -95,13 +95,13 @@ typedef struct tcb {
     unsigned char name[MAX_THREAD_NAME_LEN];
 } thread_t;
 
-int thread_create(const char* name, unsigned int priority, thread_main_t main_entry, void *arg, addr_t *stack, size_t stack_size, tick_t time_slice, unsigned int flags);
+int thread_create(const char* name, unsigned int priority, thread_main_t main_entry, void *arg, size_t stack_size, tick_t time_slice, unsigned int flags);
 
 int thread_assume(int thid);
 
 int thread_detach(int thid);
 
-int thread_yield();
+void thread_yield();
 
 
 #endif

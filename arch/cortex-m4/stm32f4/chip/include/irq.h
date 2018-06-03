@@ -41,9 +41,5 @@ static inline void irq_state_restore(irqstate_t state)
             );
 }
 
-#define enter_critical_section() irq_disable_state_save()
-
-#define leave_critical_section(f) irq_state_restore(f)
-
 #endif // __IRQ_H
 

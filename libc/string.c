@@ -111,7 +111,7 @@ void *memset(void *dst, int pat, size_t n)
 void *memmove(void *dst, const void *src, size_t n)
 {
     uint8_t *d = dst;
-    uint8_t *s = src;
+    const uint8_t *s = src;
 
     while (n--) {
         *d++ = *s++;

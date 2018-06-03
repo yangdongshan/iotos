@@ -3,7 +3,7 @@
 
 #include <type_def.h>
 
-void umm_init(void *start, size_t size);
+void umm_init(const void *start, size_t size);
 void *umm_malloc( size_t size );
 void *umm_calloc( size_t num, size_t size );
 void *umm_realloc( void *ptr, size_t size );

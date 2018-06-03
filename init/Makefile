@@ -3,7 +3,6 @@ CFLAGS +=
 
 # add .c files
 CSRC:= main.c \
-       os_init.c
 
 # add .S files
 ASMSRC:=

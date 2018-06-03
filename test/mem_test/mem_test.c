@@ -1,7 +1,7 @@
 #include <kdebug.h>
 #include <stdio.h>
-#include <mem.h>
-
+#include <mm.h>
+#include <string.h>
 
 struct region {
     char *ptr;
@@ -32,12 +32,12 @@ void mem_test()
         char *ptr;
         size_t size = mem_region[i].size;
         char pat = mem_region[i].pat;
-        ptr = mm_malloc(mem_region[i].size);
+        ptr = malloc(mem_region[i].size);
         mem_region[i].ptr =  ptr;
         memset(ptr, pat, size);
     }
 
-    mm_free_size();
+    mm_info();
 
     for (i = 0; i < num; i++) {
         char *ptr = mem_region[i].ptr;
@@ -53,8 +53,8 @@ void mem_test()
             }
        }
 
-       mm_free(ptr);
+       free(ptr);
     }
 
-    mm_free_size();
+    mm_info();
 }

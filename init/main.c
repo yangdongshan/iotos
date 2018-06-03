@@ -1,10 +1,9 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <type_def.h>
 #include <kdebug.h>
 #include <arch.h>
 #include <board.h>
-#include <mem.h>
+#include <kernel.h>
 #include <stm32f4xx_conf.h>
 #include <testcase.h>
 
@@ -28,6 +27,16 @@ const size_t boot_stack_size = CONFIG_BOOT_STACK_SIZE;
 const size_t boot_stack_size = 0x400;
 #endif
 
+
+void idle_loop(void *arg)
+{
+    int cnt = 0;
+
+    while (1) {
+        kdebug_print("idle loop %d\r\n", cnt++);
+    }
+}
+
 int os_start()
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -37,8 +46,6 @@ int os_start()
     KDBG(INFO, "*** welcome to iotos *** \r\n\r\n");
     KDBG(INFO, "system data section %p size 0x%x\r\n",
             _sdata, _edata - _sdata);
-    KDBG(INFO, "system bss section  %p size 0x%x\r\n",
-            _sbss, _ebss - _sbss);
 
     KDBG(INFO, "init board\r\n");
     board_init();
@@ -46,14 +53,21 @@ int os_start()
     size_t size = _estack - _ebss - boot_stack_size;
     KDBG(INFO, "init mem, start at %p, size %dKB\r\n",
             _ebss, size >> 10);
-    mem_init(_ebss, size);
-    void *ptr = mm_malloc(128);
-    KDBG(INFO, "malloc at %p\r\n", ptr);
 
+    mm_init(_ebss, size);
     mem_test();
-
     KDBG(INFO, "os_init\r\n");
-    //os_init();
+
+    thread_early_init();
+
+    thread_create("idle", LOWEST_THREAD_PRIORITY, idle_loop, NULL,
+           1024, 1, 0);
+
+    thread_sched_start();
+
+    while (1) {
+        KASSERT(0);
+    }
 
     //user_main();
 

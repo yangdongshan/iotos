@@ -187,7 +187,7 @@ static unsigned short int umm_assimilate_down( unsigned short int c, unsigned sh
 
 /* ------------------------------------------------------------------------- */
 
-void umm_init(void *start, size_t size)
+void umm_init(const void *start, size_t size)
 {
   /* init heap pointer and size, and memset it to 0 */
   umm_heap = (umm_block *)start;

@@ -50,6 +50,7 @@ enum {
     do { \
         if (!cond) { \
             kdebug_print("[%s:%d] assert (%s) failed\n", __FILE__, __LINE__, #cond); \
+            while (1); \
         } \
     } while (0)
 

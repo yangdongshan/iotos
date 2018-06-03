@@ -60,7 +60,6 @@ int USART_PutStr(USART_TypeDef* USARTx, const char *str)
 int arch_debug_print(const char *str, int len)
 {
     size_t i = 0;
-    char c;
 
     for (; ;) {
         if (*str == '\n')
@@ -80,7 +79,6 @@ int arch_debug_print(const char *str, int len)
 int _write(int fd, const char *str, int len)
 {
     size_t i = 0;
-    char c;
 
     if (fd > 2) {
         USART_PutStr(USART2, "Invalide fd");
@@ -101,11 +99,3 @@ int _write(int fd, const char *str, int len)
 
 	return i;
 }
-
-int putchar(const char ch)
-{
-    USART_PutChar(USART2, ch);
-
-    return (int)ch;
-}
-

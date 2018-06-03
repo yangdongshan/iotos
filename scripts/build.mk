@@ -24,7 +24,7 @@ SUBMODULE:$(MODULE)
 LIB_OBJS=$(shell find $(CUR_DIR) -name "*.o")
 
 lib:
-	$(Q) echo "AR $(libname) $(LIB_OBJS)"
+	$(Q) echo "AR $(libname)"
 	$(Q) $(AR) $(ARFLAGS) $(libname) $(LIB_OBJS)
 
 exe: obj $(LIB_OBJS)

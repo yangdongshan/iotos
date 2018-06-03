@@ -7,7 +7,7 @@ CSRC:= context.c \
        arch_debug.c
 
 # add .S files
-ASMSRC:=
+ASMSRC:= context_switch.S \
 
 # add sub-directories
 MODULE:=

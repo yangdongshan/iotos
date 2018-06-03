@@ -16,3 +16,21 @@ config MAX_THREAD_CNT
     default 32
 
 endmenu
+
+choice
+    prompt "mm debug level"
+    default MM_DEBUG_ERROR
+
+config MM_DEBUG_ERROR
+    bool "enable kernel mm error msg"
+
+config MM_DEBUG_DEBUG
+    bool "enalbe kernel mm debug msg"
+
+config MM_DEBUG_INFO
+    bool "enable kernel mm info msg"
+
+config MM_DEBUG_NONE
+    bool "disable kernel mm msg"
+
+endchoice

@@ -10,14 +10,14 @@ ASMSRC:=
 # add sub-directories
 MODULE :=
 #MODULE:= mailbox
-#MODULE += mutex
+MODULE += mutex
 #MODULE += sched
-#MODULE += semphore
+MODULE += semphore
 #MODULE += signal
-#MODULE += thread
+MODULE += thread
 #MODULE += timer
 #MODULE += watchdog
-MODULE += mem
+MODULE += mm
 MODULE += kdebug
 
 

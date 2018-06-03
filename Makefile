@@ -65,16 +65,16 @@ export CFLAGS
 export ARFLAGS
 export LDFLAGS
 
-ELF=$(ROOTDIR)/$(BOOT_DIR)/$(PROJNAME).elf
-HEX=$(ROOTDIR)/$(BOOT_DIR)/$(PROJNAME).hex
-BIN=$(ROOTDIR)/$(BOOT_DIR)/$(PROJNAME).bin
-SREC=$(ROOTDIR)/$(BOOT_DIR)/$(PROJNAME).srec
-MAP=$(ROOTDIR)/$(BOOT_DIR)/$(PROJNAME).map
+ELF=$(BOOT_DIR)/$(PROJNAME).elf
+HEX=$(BOOT_DIR)/$(PROJNAME).hex
+BIN=$(BOOT_DIR)/$(PROJNAME).bin
+SREC=$(BOOT_DIR)/$(PROJNAME).srec
+MAP=$(BOOT_DIR)/$(PROJNAME).map
 
 all: $(ELF)
 
 $(ELF): lib
-	$(Q) $(MAKE) -C $(BOOT_DIR) exe elf=$@ linker_file=$(LINKER_FILE)
+	$(Q) $(MAKE) -C $(BOOT_DIR) exe elf=$(ROOTDIR)/$(ELF) linker_file=$(LINKER_FILE)
 	$(Q) echo "OBJCOPY $(HEX)"
 	$(Q) $(OBJCOPY) -O ihex $@ $(HEX)
 	$(Q) echo "OBJCOPY $(BIN)"

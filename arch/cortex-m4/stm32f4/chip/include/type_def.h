@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/*
 typedef unsigned char       bool;
+
+/*
 typedef unsigned char       uint8_t;
 typedef signed char         int8_t;
 typedef unsigned short      uint16_t;
@@ -22,6 +23,7 @@ typedef signed long long    int64_t;
 typedef unsigned long       addr_t;
 
 typedef unsigned long       tick_t;
+
 typedef unsigned int        irqstate_t;
 
 #define true (1)
