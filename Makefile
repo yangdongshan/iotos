@@ -31,11 +31,13 @@ LDFLAGS +=
 
 CHIP_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/chip
 BOARD_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/$(BOARD)
+PORT_DIR := arch/gnu/armv7-m
 BOOT_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/boot
 
 # library directory
 LIBDIR := $(CHIP_DIR) \
           $(BOARD_DIR) \
+		  $(PORT_DIR) \
 		  init \
 		  libc \
 		  test
@@ -52,10 +54,11 @@ CFLAGS += -I$(ROOTDIR)/$(CHIP_DIR)/include \
 		  -I$(ROOTDIR)/$(CHIP_DIR)/peripherals/include \
 		  -I$(ROOTDIR)/$(BOOT_DIR)/include \
 		  -I$(ROOTDIR)/$(BOARD_DIR)/include \
+		  -I$(ROOTDIR)/$(PORT_DIR) \
           -I$(ROOTDIR)/kernel/include \
           -I$(ROOTDIR)/include \
           -I$(ROOTDIR)/libc/include \
-		  -I$(ROOTDIR)/test/include
+		  -I$(ROOTDIR)/test/include \
 
 
 export LDDIR
@@ -116,7 +119,6 @@ clean:
 
 distclean: clean
 	$(Q) $(MAKE) -C $(KCONFIGDIR) clean
-	$(Q) -rm -rf $(CHIP_DIR) $(BOARD_DIR) $(BOOT_DIR)
 	$(Q) -rm -rf include/generated include/config .config
 
 launch_qemu: $(ISO)

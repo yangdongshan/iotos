@@ -1,8 +1,7 @@
 #ifndef __THREAD_H
 #define __THREAD_H
 
-#include <type_def.h>
-#include <context.h>
+#include <arch.h>
 #include <list.h>
 
 
@@ -33,7 +32,7 @@
 
 typedef int (*thread_start_t)(void);
 
-typedef int (*thread_main_t)(int argc, char**argv);
+typedef int (*thread_main_t)(void *arg);
 
 
 typedef enum {
@@ -48,9 +47,9 @@ typedef enum {
 typedef struct thread {
     struct list_node node;
 
-    addr_t *sp;
+    addr_t sp;
     // assume stack grows downside
-    addr_t *sp_bottom;
+    void *sp_alloc_addr;
     unsigned int stack_size;
 
     // priority of the thread
@@ -78,7 +77,7 @@ typedef struct thread {
 #endif
 
     // thread id
-    unsigned int thread_id;
+    int thread_id;
 
     thread_state_e state;
 

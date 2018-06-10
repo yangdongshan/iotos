@@ -1,7 +1,7 @@
 #ifndef __LIST_H
 #define __LIST_H
 
-#include <type_def.h>
+#include <typedef.h>
 
 #define offset_of(type, member) \
     ((unsigned long) &((s *) 0)->m)

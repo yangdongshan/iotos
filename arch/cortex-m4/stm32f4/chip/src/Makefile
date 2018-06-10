@@ -2,12 +2,11 @@
 CFLAGS +=
 
 # add .c files
-CSRC:= context.c \
-       arch_init.c \
+CSRC:= arch_init.c \
        arch_debug.c
 
 # add .S files
-ASMSRC:= context_switch.S \
+ASMSRC:=
 
 # add sub-directories
 MODULE:=

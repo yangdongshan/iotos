@@ -1,7 +1,7 @@
 #ifndef _UMM_MALLOC_H
 #define _UMM_MALLOC_H
 
-#include <type_def.h>
+#include <typedef.h>
 
 void umm_init(const void *start, size_t size);
 void *umm_malloc( size_t size );

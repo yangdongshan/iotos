@@ -5,9 +5,21 @@
 #include "umm_malloc.h"
 #include "umm_malloc_cfg.h"
 
-void mm_init(const void *start, size_t size)
+const extern char _sdata[], _edata[];
+const extern char _sbss[], _ebss[];
+const extern char _estack[];
+
+#ifdef CONFIG_BOOT_STACK_SIZE
+const size_t msp_stack_size = CONFIG_BOOT_STACK_SIZE;
+#else
+const size_t msp_stack_size = 0x400;
+#endif
+
+void mm_init(void)
 {
-    umm_init(start, size);
+    size_t size = _estack - _ebss - msp_stack_size;
+
+    umm_init(_ebss, size);
 }
 
 void *mm_malloc(size_t size)

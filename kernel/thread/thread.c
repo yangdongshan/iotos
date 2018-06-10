@@ -10,8 +10,7 @@
 static thread_t *thread_id_table[MAX_THREAD_CNT];
 static thread_t *cur_thread = NULL;
 
-static thread_t main_thread;
-static thread_t *idle_thread = NULL;
+static int idle_thread_id = -1;
 
 static struct list_node global_thread_list;
 static struct list_node thread_ready_list[LOWEST_THREAD_PRIORITY + 1];
@@ -24,7 +23,8 @@ static uint8_t runqueue_bitmap[RUNQUEUE_SIZE];
 
 static int get_runqueue_first_set_bit(void)
 {
-    int byte, bit;
+    int byte;
+    int bit = 0;
     uint8_t ch;
 
     for (byte = 0; byte < RUNQUEUE_SIZE; byte++) {
@@ -36,38 +36,65 @@ static int get_runqueue_first_set_bit(void)
         return -1;
 
     ch = runqueue_bitmap[byte];
-        if (ch & 0x01) {
-            bit = 0;
-        } else if (ch & 0x02) {
-            bit = 1;
-        } else if (ch & 0x04) {
-            bit = 2;
-        } else if (ch & 0x08){
-            bit = 3;
-        } else if (ch & 0x10) {
-            bit = 4;
-        } else if (ch & 0x20) {
-            bit = 5;
-        } else if (ch & 0x40) {
-            bit = 6;
-        } else if (ch & 0x80) {
-            bit = 7;
-        }
+
+    if (ch & 0x01) {
+        bit = 0;
+    } else if (ch & 0x02) {
+        bit = 1;
+    } else if (ch & 0x04) {
+        bit = 2;
+    } else if (ch & 0x08){
+        bit = 3;
+    } else if (ch & 0x10) {
+        bit = 4;
+    } else if (ch & 0x20) {
+        bit = 5;
+    } else if (ch & 0x40) {
+        bit = 6;
+    } else if (ch & 0x80) {
+        bit = 7;
+    }
 
     return byte * 8 + bit;
 }
 
 void set_runqueue_bit(int priority)
 {
-
-    KASSERT(priority >= 0 && priority <= LOWEST_THREAD_PRIORITY);
+    KASSERT((priority >= 0) && (priority <= LOWEST_THREAD_PRIORITY));
 
     uint8_t byte = priority / 8;
-    uint8_t bit = byte % 8;
+    uint8_t bit = priority % 8;
 
+    KDBG(DEBUG, "set runqueue byte %d bit %d for priority %d\r\n", byte, bit, priority);
     runqueue_bitmap[byte] |= 1 << bit;
 }
 
+static void clear_runqueue_bit(int priority)
+{
+    KASSERT((priority >= 0) && (priority <= LOWEST_THREAD_PRIORITY));
+
+    uint8_t byte = priority / 8;
+    uint8_t bit = priority % 8;
+
+    runqueue_bitmap[byte] &= ~(1 << bit);
+
+    KDBG(DEBUG, "clear runqueue byte %d bit %d for priority %d\r\n", byte, bit, priority);
+
+}
+static inline int get_idle_thread_id(void)
+{
+    return idle_thread_id;
+}
+
+static inline set_idle_thread_id(int id)
+{
+    idle_thread_id = id;
+}
+
+static inline thread_t* idle_thread(void)
+{
+    return thread_id_table[idle_thread_id];
+}
 
 static inline thread_t* get_thread_by_id(int thread_id)
 {
@@ -102,13 +129,15 @@ static void thread_set_name(thread_t *thread, const char *name)
     size_t name_len = strlen(name);
     if (name_len >= MAX_THREAD_NAME_LEN) {
         name_len = MAX_THREAD_NAME_LEN - 1;
-        memset(thread->name, 0, MAX_THREAD_NAME_LEN);
-
-        state = enter_critical_section();
-        strncpy(thread->name, name, name_len);
-        leave_critical_section(state);
-
     }
+
+    memset(thread->name, 0, MAX_THREAD_NAME_LEN);
+
+    state = enter_critical_section();
+    strncpy(thread->name, name, name_len);
+    kdebug_print("%s thread->name %s\r\n", __func__, name);
+    leave_critical_section(state);
+
 }
 
 static void thread_set_priority(thread_t *thread, int priority)
@@ -129,7 +158,7 @@ static void thread_insert_into_ready_list_head(thread_t *thread)
     KASSERT(!list_in_list(&thread->node));
 
     list_add_head(&thread_ready_list[thread->priority], &thread->node);
-    set_runqueue_bit(1 << thread->priority);
+    set_runqueue_bit(thread->priority);
 }
 
 static void thread_insert_into_ready_list_tail(thread_t *thread)
@@ -138,8 +167,9 @@ static void thread_insert_into_ready_list_tail(thread_t *thread)
     KASSERT(thread->state == THREAD_READY);
     KASSERT(!list_in_list(&thread->node));
 
+    KDBG(DEBUG, "insert old thread %s into ready list\r\n", thread->name);
     list_add_tail(&thread_ready_list[thread->priority], &thread->node);
-    set_runqueue_bit(1 << thread->priority);
+    set_runqueue_bit(thread->priority);
 }
 
 static inline thread_t *get_cur_thread(void)
@@ -152,6 +182,7 @@ static inline void set_cur_thread(thread_t *thread)
     irqstate_t state;
 
     state = enter_critical_section();
+    KDBG(DEBUG, "set cur_thread %s\r\n", thread->name);
     cur_thread = thread;
     leave_critical_section(state);
 }
@@ -177,10 +208,20 @@ static int thread_allocate_id(thread_t *thread)
     return id;
 }
 
+static void idle_main(void *arg)
+{
+    int cnt = 0;
+
+    while (1) {
+        kdebug_print("idle loop %d\r\n", cnt++);
+        thread_yield();
+    }
+}
+
+
 void thread_early_init(void)
 {
     unsigned int i;
-    thread_t *thread;
 
     memset(thread_id_table, 0, sizeof(thread_id_table));
     memset(runqueue_bitmap, 0, sizeof(runqueue_bitmap));
@@ -192,33 +233,41 @@ void thread_early_init(void)
     list_head_init(&global_thread_list);
     list_head_init(&thread_suspend_list);
 
-    thread_set_name(&main_thread, "boot_thread");
-    thread_set_priority(&main_thread, HIGHEST_THREAD_PRIORITY);
-    thread_allocate_id(&main_thread);
-    set_cur_thread(&main_thread);
+   int id = thread_create("idle", LOWEST_THREAD_PRIORITY, idle_main, NULL, 1024, 1, 0);
+
+   if (id != -1) {
+        set_idle_thread_id(id);
+   }
 }
 
-static int thread_start_entry(thread_t *thread)
+static int start_entry(thread_t *thread)
 {
+    int ret = 0;
 
+    KDBG(INFO, "thread name %s\r\n", thread->name);
+    if (thread->main_entry) {
+        ret = thread->main_entry( thread->main_arg);
+    }
+
+    return ret;
 }
 
 static void thread_setup_initial_stack(thread_t *thread)
 {
     struct context_frame *cf;
 
-    addr_t stack_top = (addr_t)thread->sp_bottom + thread->stack_size;
+    addr_t stack_top = (addr_t)thread->sp_alloc_addr + thread->stack_size;
 
     // align at 8 bytes
     stack_top = stack_top & (~0x07ul);
-    thread->stack_size = (addr_t)thread->sp_bottom - stack_top;
+    thread->stack_size = stack_top - (addr_t)thread->sp_alloc_addr;
 
     cf = (struct context_frame*)stack_top;
     cf--;
 
     arch_init_context_frame(cf, (addr_t*)thread->start_entry, thread->start_arg);
 
-    thread->sp = (addr_t*)cf;
+    thread->sp = (addr_t)cf;
 }
 
 
@@ -240,7 +289,7 @@ int thread_suspend(int thread_id)
     if (thread_id_valid(thread_id))
         return -ERR_INVALID_THREAD_ID;
 
-    if (!thread_id == IDLE_THREAD_ID)
+    if (!thread_id == idle_thread_id)
         return -ERR_SUSPEDN_IDLE_THREAD;
 
     thread_t *thread = get_thread_by_id(thread_id);
@@ -264,26 +313,7 @@ int thread_suspend(int thread_id)
 
 void thread_yield(void)
 {
-    irqstate_t state;
-
-    thread_t *old = get_cur_thread();
-    KASSERT(old != NULL);
-
-    if (old == idle_thread)
-        return;
-
-    state = enter_critical_section();
-
-    old->state = THREAD_READY;
-    old->time_remain = 0;
-    thread_insert_into_ready_list_tail(old);
-
-    leave_critical_section(state);
-
     thread_sched();
-
-
-    return;
 }
 
 int thread_resume(int thread_id)
@@ -329,10 +359,20 @@ thread_t* get_new_thread()
     thread_t *thread;
 
     int priority = get_runqueue_first_set_bit();
+
+    // no thread other than idle is ready
+    if (priority == -1) {
+        return NULL;
+    }
+
     KASSERT(!list_is_empty(&thread_ready_list[priority]));
 
     thread = list_first_entry(&thread_ready_list[priority], struct thread, node);
+
     list_delete(&thread->node);
+    if (list_is_empty(&thread_ready_list[priority])) {
+        clear_runqueue_bit(priority);
+    }
 
     return thread;
 }
@@ -341,25 +381,31 @@ void thread_sched(void)
 {
     irqstate_t state;
 
-    thread_t *old = get_cur_thread();
-
     state = enter_critical_section();
-    old->state = THREAD_READY;
-    thread_insert_into_ready_list_tail(old);
 
+    thread_t *old = get_cur_thread();
     thread_t *new = get_new_thread();
-    new->state = THREAD_RUNNING;
 
-    if (old == new) {
+    if (new == NULL) {
+        KDBG(DEBUG, "no more thread is ready\r\n");
         leave_critical_section(state);
         return;
     }
+
+    KDBG(DEBUG, "%s, old thread %s, new thread %s\r\n", __func__, old->name, new->name);
+
+    new->state = THREAD_RUNNING;
+    old->state = THREAD_READY;
+    old->time_remain = 0;
+
+
+    thread_insert_into_ready_list_tail(old);
 
     if (new->time_remain <= 0)
         new->time_remain = new->time_slice;
 
     set_cur_thread(new);
-    arch_context_switch(old->sp, new->sp);
+    arch_context_switch(&new->sp, &old->sp);
 
     leave_critical_section(state);
 }
@@ -374,6 +420,11 @@ int thread_create(const char* name,
 {
     thread_t *thread;
     irqstate_t state;
+    int ret = NO_ERR;
+
+    if (main_entry == NULL) {
+        return -ERR_INVALID_THREAD_ENTRY;
+    }
 
     thread = malloc(sizeof(*thread));
     if (NULL == thread)
@@ -382,31 +433,36 @@ int thread_create(const char* name,
     memset(thread, 0, sizeof(*thread));
 
     void *stack = malloc(stack_size);
-    if (stack == NULL)
-        return -ERR_NO_MEM;
+    if (stack == NULL) {
+        ret = -ERR_NO_MEM;
+        goto m_free1;
+    }
 
     memset(stack, 0, stack_size);
 
     thread->priority = priority;
-    thread->start_entry = thread_start_entry;
+    thread->start_entry = start_entry;
     thread->start_arg = thread;
     thread->main_entry = main_entry;
     thread->main_arg = arg;
-    thread->sp_bottom = stack;
+    thread->sp_alloc_addr = stack;
     thread->stack_size = stack_size;
     thread->time_slice = time_slice;
     thread->flags = flags;
 
     if (-1 == thread_allocate_id(thread)) {
-        return -ERR_NO_THREAD_ID_AVAILABLE;
+        ret = -ERR_NO_THREAD_ID_AVAILABLE;
+        goto m_free2;
     }
 
     thread_setup_initial_stack(thread);
-
+    KDBG(DEBUG, "thread %p stack alloc addr 0x%x, stack size 0x%x, sp 0x%x\r\n", thread, thread->sp_alloc_addr, thread->stack_size, thread->sp);
     if (NULL != name) {
         thread_set_name(thread, name);
     }
 
+    KDBG(DEBUG, "%s create thread %p, name %s\r\n",
+            __func__, thread, thread->name);
     state = enter_critical_section();
 
     thread_addto_suspend_list(thread);
@@ -414,7 +470,14 @@ int thread_create(const char* name,
     leave_critical_section(state);
 
     return thread->thread_id;
+
+m_free2:
+    free(stack);
+m_free1:
+    free(thread);
+    return ret;
 }
+
 
 void thread_sched_start()
 {
@@ -424,15 +487,22 @@ void thread_sched_start()
     state = enter_critical_section();
 
     list_foreach_entry_safe(&thread_suspend_list, thread, temp, struct thread, node) {
-        list_delete(&thread->node);
-        thread_insert_into_ready_list_tail(&thread);
+            kdebug_print("insert thread %p name %s to ready list\r\n", thread, thread->name);
+            list_delete(&thread->node);
+            thread->state = THREAD_READY;
+            kdebug_print("thread->node prev %p, next %p, priority %d\r\n",
+                    thread->node.prev, thread->node.next,
+                    thread->priority);
+            thread_insert_into_ready_list_tail(thread);
     }
-
     thread = get_new_thread();
+    kdebug_print("get new thread %s %p from ready list\r\n",  thread->name, thread);
+    set_cur_thread(thread);
     leave_critical_section(state);
 
-    arch_context_switch_to(thread->sp);
+    arch_context_switch_to(&thread->sp);
 
+    kdebug_print("shouldn't return here\r\n");
     KASSERT(0);
 }
 

@@ -1,5 +1,5 @@
 
-#include <type_def.h>
+#include <typedef.h>
 #include <stm32f4xx_conf.h>
 
 void arch_debug_init(void)

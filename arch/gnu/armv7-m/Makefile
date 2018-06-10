@@ -2,7 +2,7 @@
 CFLAGS +=
 
 # add .c files
-CSRC:= string.c \
+CSRC:= port.c
 
 # add .S files
 ASMSRC:=

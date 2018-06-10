@@ -140,8 +140,8 @@ extern char test_umm_heap[];
  * NOTE WELL that these macros MUST be allowed to nest, because umm_free() is
  * called from within umm_malloc()
  */
-#include <type_def.h>
-#include <kernel.h>
+#include <arch.h>
+
 #define UMM_CRITICAL_ENTRY() \
       irqstate_t state;  \
       state = enter_critical_section()

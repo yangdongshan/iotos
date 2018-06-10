@@ -1,9 +1,9 @@
 #ifndef MM_H
 #define MM_H
 
-#include <type_def.h>
+#include <typedef.h>
 
-void mm_init(const void *start, size_t size);
+void mm_init(void);
 
 void *mm_malloc( size_t size );
 void *mm_calloc( size_t num, size_t size );

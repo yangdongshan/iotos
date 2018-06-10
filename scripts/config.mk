@@ -13,7 +13,7 @@ QEMU? := $(CONFIG_QEMU)
 CC := $(TOOLCHAIN)gcc
 export CC
 
-AS := $(TOOLCHAIN)as
+AS := $(TOOLCHAIN)gcc
 export AS
 
 AR := $(TOOLCHAIN)ar
@@ -29,7 +29,7 @@ NM := $(TOOLCHAIN)nm
 SIZE := $(TOOLCHAIN)size
 
 CFLAGS := -Wall \
-          -g \
+          -ggdb \
           -std=c99 \
           -mlittle-endian \
           -mthumb \
@@ -50,7 +50,7 @@ else ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),2)
 else ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),3)
 	CFLAGS += -O3
 else
-	CFLAGS += -Os
+	CFLAGS += -O1
 endif
 
 ARFLAGS := rcs
