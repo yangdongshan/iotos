@@ -5,6 +5,7 @@
 
 #define SEM_OK         (0)
 #define ERR_SEM_PTR    (1)
+#define ERR_SEM_AGAIN  (2)
 
 typedef struct sem {
     int cnt;
