@@ -1,9 +1,8 @@
 #ifndef __THREAD_H
 #define __THREAD_H
 
-#include <arch.h>
+#include <port.h>
 #include <list.h>
-
 
 #ifndef CONFIG_MAX_THREAD_NAME_LEN
 #define MAX_THREAD_NAME_LEN (32)
@@ -30,13 +29,19 @@
 #define LOWEST_THREAD_PRIORITY (MAX_THREAD_CNT - 1)
 #define HIGHEST_THREAD_PRIORITY (0)
 
-typedef int (*thread_start_t)(void);
+
+#ifndef CONFIG_THREAD_DEFAULT_TIME_SLICE
+#define THREAD_DEFAULT_TIME_SLICE        (5)
+#else
+#define THREAD_DEFALUT_TIME_SLICE CONFIG_THREAD_DEFAULT_TIME_SLICE
+#endif
+
+typedef int (*thread_start_t)(void *arg);
 
 typedef int (*thread_main_t)(void *arg);
 
-
 typedef enum {
-    THREAD_SUSPENDED,
+    THREAD_SUSPENDED = 0,
     THREAD_READY,
     THREAD_RUNNING,
     THREAD_PENDING,
@@ -91,8 +96,15 @@ typedef struct thread {
 
     unsigned int exit_code;
 
-    unsigned char name[MAX_THREAD_NAME_LEN];
+    char name[MAX_THREAD_NAME_LEN];
 } thread_t;
+
+
+
+
+void thread_init(void);
+
+void thread_sched_start(void);
 
 int thread_create(const char* name, unsigned int priority, thread_main_t main_entry, void *arg, size_t stack_size, tick_t time_slice, unsigned int flags);
 
@@ -102,5 +114,8 @@ int thread_detach(int thid);
 
 void thread_yield();
 
+void thread_become_ready(thread_t *thread);
+
+void set_idle_thread_id(int id);
 
 #endif

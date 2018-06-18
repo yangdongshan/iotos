@@ -1,5 +1,5 @@
-#ifndef ARCH_H
-#define ARCH_H
+#ifndef PORT_H
+#define PORT_H
 
 #include <typedef.h>
 
@@ -71,8 +71,4 @@ void arch_context_switch(unsigned char *new_sp, unsigned char *old_sp);
 
 void arch_init_context_frame(struct context_frame *cf, addr_t *entry, void *arg);
 
-#define enter_critical_section() irq_disable_state_save()
-
-#define leave_critical_section(f) irq_state_restore(f)
-
-#endif // ARCH_H
+#endif // PORT_H

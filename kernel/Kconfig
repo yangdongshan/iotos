@@ -4,6 +4,10 @@ config BOOT_STACK_SIZE
     hex "boot stack size"
     default 0x400
 
+config TICKS_PER_SEC
+    int "ticks per second"
+    default 100
+    ---help---
 
 menu "Thread properties"
 

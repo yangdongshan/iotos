@@ -1,5 +1,6 @@
 #ifdef UMM_INFO
 #include "umm_malloc_cfg.h"
+#include <irq.h>
 /* ----------------------------------------------------------------------------
  * One of the coolest things about this little library is that it's VERY
  * easy to get debug information about the memory heap by simply iterating

@@ -19,6 +19,9 @@
 
 //#include "mailbox.h"
 
+void os_init(void);
+
+void os_run(void);
 
 #endif // __KERNEL_H
 

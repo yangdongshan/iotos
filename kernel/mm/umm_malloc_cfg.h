@@ -50,6 +50,7 @@ extern char test_umm_heap[];
 #define UMM_H_ATTPACKPRE
 #define UMM_H_ATTPACKSUF __attribute__((__packed__))
 
+#include <irq.h>
 #include <kdebug.h>
 
 #define LEVLE_NONE 0
@@ -140,7 +141,7 @@ extern char test_umm_heap[];
  * NOTE WELL that these macros MUST be allowed to nest, because umm_free() is
  * called from within umm_malloc()
  */
-#include <arch.h>
+#include <port.h>
 
 #define UMM_CRITICAL_ENTRY() \
       irqstate_t state;  \

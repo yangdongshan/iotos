@@ -1,7 +1,9 @@
 #include <string.h>
-#include <errno.h>
+#include <err.h>
+#include <irq.h>
 #include <kernel.h>
 #include <kdebug.h>
+
 
 #define to_thread_ptr(node) container_of(node, struct list_node, node)
 
@@ -86,7 +88,7 @@ static inline int get_idle_thread_id(void)
     return idle_thread_id;
 }
 
-static inline set_idle_thread_id(int id)
+void set_idle_thread_id(int id)
 {
     idle_thread_id = id;
 }
@@ -114,7 +116,7 @@ static inline bool thread_id_valid(int th_id)
 
 static inline bool thread_is_valid(int thread_id)
 {
-    if (thread_id >= 0 && thread_id <= MAX_THREAD_ID
+    if (((thread_id >= 0) && (thread_id <= MAX_THREAD_ID))
         || thread_id == IDLE_THREAD_ID) {
         return true;
     } else {
@@ -151,7 +153,7 @@ static void thread_set_priority(thread_t *thread, int priority)
     leave_critical_section(state);
 }
 
-static void thread_insert_into_ready_list_head(thread_t *thread)
+void thread_insert_into_ready_list_head(thread_t *thread)
 {
 
     KASSERT(thread->state == THREAD_READY);
@@ -172,7 +174,7 @@ static void thread_insert_into_ready_list_tail(thread_t *thread)
     set_runqueue_bit(thread->priority);
 }
 
-static inline thread_t *get_cur_thread(void)
+thread_t *get_cur_thread(void)
 {
     return cur_thread;
 }
@@ -208,18 +210,10 @@ static int thread_allocate_id(thread_t *thread)
     return id;
 }
 
-static void idle_main(void *arg)
-{
-    int cnt = 0;
-
-    while (1) {
-        kdebug_print("idle loop %d\r\n", cnt++);
-        thread_yield();
-    }
-}
 
 
-void thread_early_init(void)
+
+void thread_init(void)
 {
     unsigned int i;
 
@@ -233,20 +227,17 @@ void thread_early_init(void)
     list_head_init(&global_thread_list);
     list_head_init(&thread_suspend_list);
 
-   int id = thread_create("idle", LOWEST_THREAD_PRIORITY, idle_main, NULL, 1024, 1, 0);
 
-   if (id != -1) {
-        set_idle_thread_id(id);
-   }
 }
 
-static int start_entry(thread_t *thread)
+static int start_entry(void *arg)
 {
-    int ret = 0;
+    int ret = NO_ERR;
+    thread_t *thread = (thread_t*)arg;
 
     KDBG(INFO, "thread name %s\r\n", thread->name);
     if (thread->main_entry) {
-        ret = thread->main_entry( thread->main_arg);
+        ret = thread->main_entry(thread->main_arg);
     }
 
     return ret;
@@ -280,6 +271,25 @@ static inline void thread_addto_suspend_list(thread_t *thread)
 }
 
 
+void thread_become_ready(thread_t *thread)
+{
+    irqstate_t state;
+
+    KDBG(DEBUG, "thread %s become ready\r\n", thread->name);
+
+    KASSERT(thread->state != THREAD_READY);
+    KASSERT(!list_in_list(&thread->node));
+
+    state = enter_critical_section();
+
+    thread->state = THREAD_READY;
+    thread->time_remain = thread->time_slice;
+    thread_insert_into_ready_list_tail(thread);
+
+    KDBG(DEBUG, "thread %s insert into ready list done\r\n", thread->name);
+
+    leave_critical_section(state);
+}
 
 int thread_suspend(int thread_id)
 {
@@ -289,7 +299,7 @@ int thread_suspend(int thread_id)
     if (thread_id_valid(thread_id))
         return -ERR_INVALID_THREAD_ID;
 
-    if (!thread_id == idle_thread_id)
+    if (thread_id == idle_thread_id)
         return -ERR_SUSPEDN_IDLE_THREAD;
 
     thread_t *thread = get_thread_by_id(thread_id);
@@ -302,10 +312,11 @@ int thread_suspend(int thread_id)
 
     thread_addto_suspend_list(thread);
 
-    leave_critical_section(state);
-
     if (resched)
         thread_sched();
+
+    leave_critical_section(state);
+
 
     return NO_ERR;
 }
@@ -313,7 +324,18 @@ int thread_suspend(int thread_id)
 
 void thread_yield(void)
 {
+    irqstate_t state;
+    thread_t *thread;
+
+    state = enter_critical_section();
+
+    thread= get_cur_thread();
+    thread->state = THREAD_READY;
+    thread_insert_into_ready_list_tail(thread);
     thread_sched();
+
+    leave_critical_section(state);
+
 }
 
 int thread_resume(int thread_id)
@@ -345,12 +367,12 @@ int thread_resume(int thread_id)
 
 int thread_exit(int thread_id)
 {
-
+    return NO_ERR;
 }
 
 int thread_join(int thread_id)
 {
-
+    return NO_ERR;
 }
 
 
@@ -377,37 +399,25 @@ thread_t* get_new_thread()
     return thread;
 }
 
+
+// should be invoked with interrupt disabled
 void thread_sched(void)
 {
-    irqstate_t state;
-
-    state = enter_critical_section();
-
     thread_t *old = get_cur_thread();
     thread_t *new = get_new_thread();
 
     if (new == NULL) {
         KDBG(DEBUG, "no more thread is ready\r\n");
-        leave_critical_section(state);
         return;
     }
 
-    KDBG(DEBUG, "%s, old thread %s, new thread %s\r\n", __func__, old->name, new->name);
+    KDBG(DEBUG, "%s, old thread %s, time_remain 0x%x, new thread %s, time_remain 0x%x\r\n",
+            __func__, old->name, old->time_remain,  new->name, new->time_remain);
 
     new->state = THREAD_RUNNING;
-    old->state = THREAD_READY;
-    old->time_remain = 0;
-
-
-    thread_insert_into_ready_list_tail(old);
-
-    if (new->time_remain <= 0)
-        new->time_remain = new->time_slice;
 
     set_cur_thread(new);
-    arch_context_switch(&new->sp, &old->sp);
-
-    leave_critical_section(state);
+    arch_context_switch((unsigned char*)&new->sp, (unsigned char*)&old->sp);
 }
 
 int thread_create(const char* name,
@@ -447,7 +457,10 @@ int thread_create(const char* name,
     thread->main_arg = arg;
     thread->sp_alloc_addr = stack;
     thread->stack_size = stack_size;
+    if (time_slice <= 0)
+        time_slice = THREAD_DEFAULT_TIME_SLICE;
     thread->time_slice = time_slice;
+    thread->time_remain = time_slice;
     thread->flags = flags;
 
     if (-1 == thread_allocate_id(thread)) {
@@ -461,8 +474,8 @@ int thread_create(const char* name,
         thread_set_name(thread, name);
     }
 
-    KDBG(DEBUG, "%s create thread %p, name %s\r\n",
-            __func__, thread, thread->name);
+    KDBG(DEBUG, "%s create thread %p, name %s, time_remain 0x%x\r\n",
+            __func__, thread, thread->name, thread->time_remain);
     state = enter_critical_section();
 
     thread_addto_suspend_list(thread);
@@ -479,7 +492,7 @@ m_free1:
 }
 
 
-void thread_sched_start()
+void thread_sched_start(void)
 {
     thread_t *thread, *temp;
     irqstate_t state;
@@ -500,7 +513,7 @@ void thread_sched_start()
     set_cur_thread(thread);
     leave_critical_section(state);
 
-    arch_context_switch_to(&thread->sp);
+    arch_context_switch_to((unsigned char*)&thread->sp);
 
     kdebug_print("shouldn't return here\r\n");
     KASSERT(0);

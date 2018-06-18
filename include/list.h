@@ -132,6 +132,9 @@ static inline bool list_is_empty(struct list_node *head)
     return (head->next == head)? true: false;
 }
 
+#define list_entry(ptr, type, member) \
+	container_of(ptr, type, member)
+
 #define list_first_entry(head, type, member) \
     container_of((head)->next, type, member)
 

@@ -5,7 +5,7 @@ CFLAGS +=
 CSRC:=
 
 # add .S files
-ASMSRC:= 
+ASMSRC:=
 
 # add sub-directories
 MODULE:= peripherals \

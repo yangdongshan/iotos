@@ -10,7 +10,12 @@ typedef enum {
 
     ERR_SUSPEDN_IDLE_THREAD,
 
+
+    ERR_NULL_PTR,
+    ERR_INVALID_ARG,
     ERR_NO_MEM,
+
+    ERR_IN_INTERRUPT,
 } errno_t;
 
 #endif // __ERRNO_H

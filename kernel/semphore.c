@@ -1,5 +1,6 @@
-#include <semphore.h>
 #include <typedef.h>
+#include <irq.h>
+#include <semphore.h>
 
 int sem_init(sem_t *sem, int val)
 {
@@ -15,7 +16,8 @@ int sem_init(sem_t *sem, int val)
     list_head_init(&sem->wait_list);
     sem->cnt = val;
 
-    leave_critical_senction(state);
+    leave_critical_section(state);
+
     return ret;
 }
 
