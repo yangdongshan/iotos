@@ -23,7 +23,7 @@ static inline int leave_interrupt(void)
     return int_nest_cnt;
 }
 
-bool in_interrupt(void);
+bool in_nested_interrupt(void);
 
 #endif // IRQ_H
 

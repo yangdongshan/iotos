@@ -5,30 +5,21 @@
 #include <err.h>
 #include <kdebug.h>
 
-volatile unsigned long ticks = 0;
+unsigned long gticks = 0;
 
-void sys_time_tick(void)
-{
-    ticks++;
-}
-
-tick_t get_sys_tick(void)
-{
-    return ticks;
-}
 
 
 int msleep(unsigned int ms)
 {
     irqstate_t state;
 
+    state = enter_critical_section();
     thread_t *thread = get_cur_thread();
 
     KDBG(DEBUG, "thread %s go to sleep\r\n", thread->name);
 
-    int ret = register_oneshot_timer(ms, thread_become_ready, thread);
+    register_oneshot_timer(thread->name, ms, thread_become_ready, thread);
 
-    state = enter_critical_section();
     thread->state = THREAD_SLEEPING;
     thread_sched();
 

@@ -2,7 +2,7 @@
 #include <port.h>
 #include <typedef.h>
 
-void arch_context_switch_to(unsigned char* sp)
+void __attribute__((optimize("O2"))) arch_context_switch_to(unsigned char* sp) 
 {
     __asm__ (
              "cpsid i\r\n"
@@ -18,14 +18,14 @@ void arch_context_switch_to(unsigned char* sp)
              );
 }
 
-void arch_context_switch(unsigned char *new_sp, unsigned char *old_sp)
+void __attribute__((optimize("O2"))) arch_context_switch(unsigned char *new_sp, unsigned char *old_sp) 
 {
     __asm__ (
-             "cpsie i\t\n"
+             "cpsid i\t\n"
              "ldr r2, =0xE000ED04\t\n"
              "ldr r3, =0x10000000\t\n"
              "str r3, [r2]\t\n"
-             "cpsid i\t\n"
+             "cpsie i\t\n"
             );
 }
 
@@ -34,7 +34,7 @@ void arch_context_switch(unsigned char *new_sp, unsigned char *old_sp)
  *  r0: new thread sp addr
  *  r1: old thread sp addr
  */
-void PendSV_Handler(void)
+void __attribute__((optimize("O2"))) PendSV_Handler(void)
 {
     __asm__ (
              "cpsid i\t\n"
@@ -87,6 +87,4 @@ void arch_init_context_frame(struct context_frame *cf, addr_t *entry, void *arg)
     cf->r5 =  0x05050505;
     cf->r4 =  0x04040404;
 }
-
-
 

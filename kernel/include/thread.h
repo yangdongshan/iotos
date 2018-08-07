@@ -101,7 +101,6 @@ typedef struct thread {
 
 
 
-
 void thread_init(void);
 
 void thread_sched_start(void);
@@ -114,7 +113,13 @@ int thread_detach(int thid);
 
 void thread_yield();
 
+void thread_sched(void);
+
+thread_t *get_cur_thread(void);
+
 void thread_become_ready(thread_t *thread);
+
+bool thread_can_be_preempted(void);
 
 void set_idle_thread_id(int id);
 

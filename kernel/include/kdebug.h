@@ -3,6 +3,8 @@
 
 #include <arch_debug.h>
 
+#include <irq.h>
+
 typedef int (*print_func)(const char *str, int len);
 
 int kdebug_print(const char *fmt, ...);
@@ -36,7 +38,10 @@ enum {
 #define KDBG(level, fmt, args...) \
     do { \
         if (level <= KERNEL_DEBUG_LEVLE) { \
+            irqstate_t __state; \
+            __state = enter_critical_section(); \
             kdebug_print("["#level"] "fmt, ##args); \
+            leave_critical_section(__state); \
         } \
     } while (0)
 

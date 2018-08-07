@@ -78,7 +78,7 @@ int arch_debug_print(const char *str, int len)
 {
     size_t i = 0;
 
-    for (; ;) {
+    while (i < len) {
 #if 0
         if (*str == '\n') {
             USART_PutChar(USART2, '\r');
@@ -92,9 +92,6 @@ int arch_debug_print(const char *str, int len)
 #endif
 
         i++;
-
-        if (i >= len)
-            break;
     }
 
 	return i;

@@ -31,13 +31,14 @@ LDFLAGS +=
 
 CHIP_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/chip
 BOARD_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/$(BOARD)
-PORT_DIR := arch/gnu/armv7-m
+PORT_DIR := arch/gnu/arm/armv7-m
 BOOT_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/boot
 
 # library directory
 LIBDIR := $(CHIP_DIR) \
           $(BOARD_DIR) \
 		  $(PORT_DIR) \
+		  $(PORT_DIR)/../common \
 		  init \
 		  libc \
 		  test
@@ -55,6 +56,7 @@ CFLAGS += -I$(ROOTDIR)/$(CHIP_DIR)/include \
 		  -I$(ROOTDIR)/$(BOOT_DIR)/include \
 		  -I$(ROOTDIR)/$(BOARD_DIR)/include \
 		  -I$(ROOTDIR)/$(PORT_DIR) \
+		  -I$(ROOTDIR)/$(PORT_DIR)/../common \
           -I$(ROOTDIR)/kernel/include \
           -I$(ROOTDIR)/include \
           -I$(ROOTDIR)/libc/include \

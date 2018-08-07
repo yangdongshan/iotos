@@ -30,6 +30,7 @@ SIZE := $(TOOLCHAIN)size
 
 CFLAGS := -Wall \
           -ggdb \
+		  -gdwarf \
           -std=c99 \
           -mlittle-endian \
           -mthumb \
@@ -38,7 +39,7 @@ CFLAGS := -Wall \
           -mfpu=fpv4-sp-d16 \
           -Wdouble-promotion \
           -finline \
-          -MT -MP -MD 
+          -MT -MP -MD
           #-ffreestanding \
 
 ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),0)
@@ -50,7 +51,7 @@ else ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),2)
 else ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),3)
 	CFLAGS += -O3
 else
-	CFLAGS += -O1
+	CFLAGS += -Os
 endif
 
 ARFLAGS := rcs

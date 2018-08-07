@@ -2,14 +2,13 @@
 CFLAGS +=
 
 # add .c files
-CSRC:=
+CSRC:= thread_test.c \
 
 # add .S files
 ASMSRC:=
 
 # add sub-directories
-MODULE:= mem_test \
-         thread_test \
+MODULE:=
 
 
 # include build.mk

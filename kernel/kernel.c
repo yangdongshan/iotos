@@ -4,8 +4,6 @@
 
 static int idle_main(void *arg)
 {
-    int cnt = 0;
-
     while (1) {
         ;;
     }

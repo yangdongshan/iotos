@@ -26,6 +26,8 @@ int my_timer2(void *arg)
 
     return 0;
 }
+extern int thread_test(void);
+
 static int sys_init(void *arg)
 {
     int ret;
@@ -36,10 +38,14 @@ static int sys_init(void *arg)
 
     arch_systick_start();
 
-    register_periodical_timer(1000, my_timer1, NULL);
+    register_periodical_timer("timer1", 1000, my_timer1, NULL);
+    register_oneshot_timer("timer2",1000, my_timer2, NULL);
+
+    thread_test();
+
     while(1) {
         kdebug_print("%s: sys_init loop %d\r\n", __func__, cnt++);
-        msleep(1000);
+        msleep(2000);
         //thread_yield();
     }
 
