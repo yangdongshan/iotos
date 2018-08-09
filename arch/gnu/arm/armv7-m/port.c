@@ -2,7 +2,7 @@
 #include <port.h>
 #include <typedef.h>
 
-void __attribute__((optimize("O2"))) arch_context_switch_to(unsigned char* sp) 
+void __attribute__((optimize("O2"))) arch_start_first_task(void)
 {
     __asm__ (
              "cpsid i\r\n"
@@ -18,13 +18,13 @@ void __attribute__((optimize("O2"))) arch_context_switch_to(unsigned char* sp)
              );
 }
 
-void __attribute__((optimize("O2"))) arch_context_switch(unsigned char *new_sp, unsigned char *old_sp) 
+void __attribute__((optimize("O2"))) arch_context_switch(void)
 {
     __asm__ (
              "cpsid i\t\n"
-             "ldr r2, =0xE000ED04\t\n"
-             "ldr r3, =0x10000000\t\n"
-             "str r3, [r2]\t\n"
+             "ldr r0, =0xE000ED04\t\n"
+             "ldr r1, =0x10000000\t\n"
+             "str r1, [r0]\t\n"
              "cpsie i\t\n"
             );
 }
@@ -38,16 +38,20 @@ void __attribute__((optimize("O2"))) PendSV_Handler(void)
 {
     __asm__ (
              "cpsid i\t\n"
-             "mrs    r2, psp\t\n"
-             "cbz    r2, 1f\t\n"
-             "subs r2, r2, #0x20\t\n"
-             "stm r2, {r4-r11}\t\n"
-             "str r2, [r1]\t\n"
+             "mrs    r1, psp\t\n"
+             "cbz    r1, 1f\t\n"
+             "subs r1, r1, #0x20\t\n"
+             "stm r1, {r4-r11}\t\n"
+             "ldr r0, =g_cur_task_stack_ptr\t\n"
+             "ldr r0, [r0]\t\n"
+             "str r1, [r0]\t\n"
              "1:\t\n"
-             "ldr r2, [r0]\t\n"
-             "ldm r2, {r4-r11}\t\n"
-             "adds r2, r2, #0x20\t\n"
-             "msr psp, r2\t\n"
+             "ldr r0, =g_new_task_stack_ptr\t\n"
+             "ldr r0, [r0]\t\n"
+             "ldr r1, [r0]\t\n"
+             "ldm r1, {r4-r11}\t\n"
+             "adds r1, r1, #0x20\t\n"
+             "msr psp, r1\t\n"
              "orr lr, lr, #0x04\t\n"
              "cpsie i"
             );

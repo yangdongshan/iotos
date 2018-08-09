@@ -5,16 +5,16 @@
 
 #define MS2TICKS(ms) ((ms * CONFIG_TICKS_PER_SEC) / 1000)
 
-extern unsigned long gticks;
+extern unsigned long g_sys_ticks;
 
 static inline void sys_time_tick(void)
 {
-    gticks++;
+    g_sys_ticks++;
 }
 
 static inline tick_t get_sys_tick(void)
 {
-    return gticks;
+    return g_sys_ticks;
 }
 
 #endif // TIME_H

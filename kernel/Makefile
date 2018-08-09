@@ -4,7 +4,7 @@ CFLAGS +=
 # add .c files
 CSRC:= irq.c \
 	   sched.c \
-	   thread.c \
+	   task.c \
 	   timer.c \
 	   time.c \
 	   semphore.c \

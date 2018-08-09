@@ -1,12 +1,11 @@
 #include <time.h>
 #include <timer.h>
-#include <thread.h>
+#include <task.h>
 #include <irq.h>
 #include <err.h>
 #include <kdebug.h>
 
-unsigned long gticks = 0;
-
+unsigned long g_sys_ticks = 0;
 
 
 int msleep(unsigned int ms)
@@ -14,17 +13,16 @@ int msleep(unsigned int ms)
     irqstate_t state;
 
     state = enter_critical_section();
-    thread_t *thread = get_cur_thread();
+    task_t *task = get_cur_task();
 
-    KDBG(DEBUG, "thread %s go to sleep\r\n", thread->name);
+    KDBG(DEBUG, "task %s go to sleep\r\n", task->name);
 
-    register_oneshot_timer(thread->name, ms, thread_become_ready, thread);
+    register_oneshot_timer(task->name, ms, task_become_ready, task);
 
-    thread->state = THREAD_SLEEPING;
-    thread_sched();
+    task->state = TASK_SLEEPING;
+    task_sched();
 
     leave_critical_section(state);
-
 
     return NO_ERR;
 }

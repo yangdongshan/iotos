@@ -7,6 +7,14 @@
 #include <testcase.h>
 #include <timer.h>
 
+#define SYS_INIT_STACK_SIZE 1024
+task_t sys_init;
+static unsigned char sys_init_stack[SYS_INIT_STACK_SIZE];
+
+#define TEST_TASK1_STACK_SIZE 1024
+task_t test_task1;
+static unsigned char test_task1_stack[SYS_INIT_STACK_SIZE];
+
 int my_timer1(void *arg)
 {
     static int cnt = 1;
@@ -26,9 +34,20 @@ int my_timer2(void *arg)
 
     return 0;
 }
-extern int thread_test(void);
 
-static int sys_init(void *arg)
+extern int task_test(void);
+
+static int test_task1_run(void *arg)
+{
+    int cnt = 0;
+
+    while(1) {
+        kdebug_print("%s cnt %d\r\n", __func__, cnt++);
+        msleep(499);
+    }
+}
+
+static int sys_init_run(void *arg)
 {
     int ret;
     int cnt = 0;
@@ -38,15 +57,26 @@ static int sys_init(void *arg)
 
     arch_systick_start();
 
-    register_periodical_timer("timer1", 1000, my_timer1, NULL);
-    register_oneshot_timer("timer2",1000, my_timer2, NULL);
+    register_periodical_timer("timer1", 699, my_timer1, NULL);
+    register_oneshot_timer("timer2",788, my_timer2, NULL);
 
-    thread_test();
+    task_create(&test_task1,
+                "test_task1",
+                10,
+                test_task1_run,
+                NULL,
+                test_task1_stack,
+                TEST_TASK1_STACK_SIZE,
+                5,
+                0);
+    task_resume(&test_task1);
+
+   task_test();
 
     while(1) {
         kdebug_print("%s: sys_init loop %d\r\n", __func__, cnt++);
-        msleep(2000);
-        //thread_yield();
+        msleep(1000);
+        //task_yield();
     }
 
     return ret;
@@ -62,7 +92,16 @@ int os_start()
 
     os_init();
 
-    thread_create("sys_init", 10, sys_init, NULL, 1024, 5, 0);
+    task_create(&sys_init,
+                "sys_init",
+                10,
+                sys_init_run,
+                NULL,
+                sys_init_stack,
+                SYS_INIT_STACK_SIZE,
+                5,
+                0);
+
 
     os_run();
 

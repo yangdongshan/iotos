@@ -65,9 +65,9 @@ static inline void irq_state_restore(irqstate_t state)
             );
 }
 
-void arch_context_switch_to(unsigned char* sp);
+void arch_start_first_task(void);
 
-void arch_context_switch(unsigned char *new_sp, unsigned char *old_sp);
+void arch_context_switch(void);
 
 void arch_init_context_frame(struct context_frame *cf, addr_t *entry, void *arg);
 

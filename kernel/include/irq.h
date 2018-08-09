@@ -7,21 +7,10 @@
 
 #define leave_critical_section(f) irq_state_restore(f)
 
-extern int int_nest_cnt;
 
-static inline int enter_interrupt(void)
-{
-    int_nest_cnt++;
+void enter_interrupt(void);
 
-    return int_nest_cnt;
-}
-
-static inline int leave_interrupt(void)
-{
-    int_nest_cnt--;
-
-    return int_nest_cnt;
-}
+void leave_interrupt(void);
 
 bool in_nested_interrupt(void);
 

@@ -1,6 +1,11 @@
-#include <thread.h>
+#include <task.h>
 #include <timer.h>
 #include <mm.h>
+
+#define IDLE_TASK_STACK_SIZE  1024
+task_t idle_task;
+static unsigned char idle_task_stack[IDLE_TASK_STACK_SIZE];
+
 
 static int idle_main(void *arg)
 {
@@ -17,19 +22,23 @@ void os_init(void)
 
     timer_init();
 
-    thread_init();
+    task_init();
 
-   int id = thread_create("idle",
-                          LOWEST_THREAD_PRIORITY,
-                          idle_main,
-                          NULL, 1024, 5, 0);
+   int id = task_create(&idle_task,
+                        "idle",
+                        LOWEST_TASK_PRIORITY,
+                        idle_main,
+                        NULL,
+                        idle_task_stack,
+                        IDLE_TASK_STACK_SIZE,
+                        5, 0);
 
    if (id != -1) {
-        set_idle_thread_id(id);
+        set_idle_task_id(id);
    }
 }
 
 void os_run(void)
 {
-    thread_sched_start();
+    task_sched_start();
 }
