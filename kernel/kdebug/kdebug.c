@@ -53,11 +53,15 @@ static char *longlong_to_string(char *buf,
     } union_ull;
     union_ull.ull = n;
     int digit;
-    while (union_ull.ui[0] > 0) {
-        digit = union_ull.ui[0] % 10;
-        union_ull.ui[0] /= 10;
+    if (union_ull.ui[0] == 0) {
+        buf[--pos] = '0';
+    } else {
+        while (union_ull.ui[0] > 0) {
+            digit = union_ull.ui[0] % 10;
+            union_ull.ui[0] /= 10;
 
-        buf[--pos] = digit + '0';
+            buf[--pos] = digit + '0';
+        }
     }
 
     while (union_ull.ui[1] > 0) {
@@ -145,7 +149,8 @@ static int _print_driver(print_func print, const char *fmt, va_list ap)
             string_len++;
         }
         /* output the string we've accumulated */
-        OUTPUT_STRING(print, s, string_len);
+        if (string_len > 0)
+            OUTPUT_STRING(print, s, string_len);
 
         /* make sure we haven't just hit the end of the string */
         if (c == 0)
