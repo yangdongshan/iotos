@@ -9,10 +9,10 @@
 #include <string.h>
 
 
-#ifndef CONFIG_PREALLOC_TIMER_CNT
-#define PREALLOC_TIMER_CNT  (10)
+#ifndef CONFIG_PRE_ALLOC_TIMER_CNT
+#define PRE_ALLOC_TIMER_CNT  (10)
 #else
-#define PREALLOC_TIMER_CNT CONFIG_PREALLOC_TIMER_CNT
+#define PRE_ALLOC_TIMER_CNT CONFIG_PRE_ALLOC_TIMER_CNT
 #endif
 
 #define TIMER_ONESHOT       (0x0)
@@ -20,51 +20,49 @@
 #define TIMER_TYPE_MASK     (0x1)
 #define TIMER_TYPE(f)       (f & TIMER_TYPE_MASK)
 
-typedef int (*timeout_cb)(void *arg);
+#define STATIC_ALLOC_TIMER   (0 << 4)
+#define DYNAMIC_ALLOC_TIMER  (1 << 4)
 
-typedef struct timer {
-    struct list_node node;
-    unsigned int timeout;
-    unsigned int cycle;
-    timeout_cb timeout_handle;
-    void *arg;
-    int flags;
-    char *name;
-} timer_t;
+
+
+static timer_t pre_alloc_timer[PRE_ALLOC_TIMER_CNT];
 
 static list_head_t free_timer_list;
 static list_head_t timer_list;
-static unsigned int registered_timer_cnt;
 static unsigned int free_timer_cnt;
 
 void timer_init(void)
 {
+    int i;
+
     list_head_init(&timer_list);
 
     list_head_init(&free_timer_list);
+
     free_timer_cnt = 0;
 
-    timer_t *timer = (timer_t*) malloc(PREALLOC_TIMER_CNT * sizeof(timer_t));
-
-    if (timer != NULL) {
-        for (int i = 0; i < PREALLOC_TIMER_CNT; i++) {
-            list_add_tail(&free_timer_list, &timer->node);
-            timer++;
-            free_timer_cnt++;
-        }
+    for (i = 0; i < PRE_ALLOC_TIMER_CNT; i++) {
+        pre_alloc_timer[i].flag |= STATIC_ALLOC_TIMER;
+        list_add_tail(&free_timer_list, &pre_alloc_timer[i].node);
+        free_timer_cnt++;
     }
-
-    registered_timer_cnt = 0;
 }
 
 static timer_t *get_free_timer(void)
 {
+    timer_t *timer;
+    irqstate_t state;
+
     if (list_is_empty(&free_timer_list)) {
+#ifdef CONFIG_DYNAMIC_ALLOC_TIMER
         KDBG(DEBUG, "malloc new timer\r\n");
-        return (timer_t*)malloc(sizeof(timer_t));
+        timer = (timer_t*)malloc(sizeof(timer_t));
+        timer->flag |= DYNAMIC_ALLOC_TIMER;
+        return timer;
+#else
+        return NULL;
+#endif
     } else {
-        timer_t *timer;
-        irqstate_t state;
         state = enter_critical_section();
 
         timer = list_first_entry(&free_timer_list, timer_t, node);
@@ -79,10 +77,11 @@ static timer_t *get_free_timer(void)
 
 static void free_timer(timer_t *timer)
 {
-    if (free_timer_cnt >= PREALLOC_TIMER_CNT) {
+    if ((timer->flag & DYNAMIC_ALLOC_TIMER) &&
+        (free_timer_cnt >= PRE_ALLOC_TIMER_CNT)) {
         KDBG(DEBUG, "free timer %s to memory, free cnt %d\r\n",
                 timer->name, free_timer_cnt);
-        mm_free(timer);
+        free(timer);
     } else {
         irqstate_t state;
 
@@ -95,34 +94,26 @@ static void free_timer(timer_t *timer)
     }
 }
 
-static int register_timer(char *name,
+static timer_t* register_timer(char *name,
                           unsigned int delay,
                           timeout_cb handle,
                           void *arg,
-                          int flags)
+                          int type)
 {
     if (in_nested_interrupt())
         return ERR_IN_INTERRUPT;
 
-    if (handle == NULL)
-        return ERR_NULL_PTR;
-
-    if (delay == 0) {
-        return ERR_INVALID_ARG;
-    }
+    KASSERT(handle != NULL);
 
     timer_t *timer = get_free_timer();
-    if (timer == NULL) {
-        return ERR_NO_MEM;
-    }
-    memset(timer, 0, sizeof(timer_t));
+    KASSERT(timer != NULL);
 
     tick_t cur_tick = get_sys_tick();
     timer->cycle = MS2TICKS(delay);
     timer->timeout = cur_tick + timer->cycle;
     timer->timeout_handle = handle;
     timer->arg = arg;
-    timer->flags = flags;
+    timer->flag |= type;
     timer->name = name;
 
     irqstate_t state;
@@ -149,20 +140,47 @@ static int register_timer(char *name,
     leave_critical_section(state);
 
     KDBG(DEBUG, "registered %s timer %s on time list %p,\n"
-                 "tick period 0x%x, timeout 0x%x\r\n",
-            ((timer->flags & TIMER_TYPE_MASK)== TIMER_ONESHOT)?
-            "oneshot":"periodical", timer->name, &timer_list, timer->cycle, timer->timeout);
-    return NO_ERR;
+         "tick period 0x%x, timeout 0x%x\r\n",
+         (timer->flag & TIMER_PERIODICAL)?
+         "periodical":"oneshot", timer->name,
+         &timer_list, timer->cycle, timer->timeout);
+
+    return timer;
 }
 
-int register_oneshot_timer(char *name, unsigned int delay, timeout_cb handle, void *arg)
+timer_t*  register_oneshot_timer(char *name, unsigned int delay, timeout_cb handle, void *arg)
 {
     return register_timer(name, delay, handle, arg, TIMER_ONESHOT);
 }
 
-int register_periodical_timer(char *name, unsigned int delay, timeout_cb handle, void *arg)
+timer_t* register_periodical_timer(char *name, unsigned int delay, timeout_cb handle, void *arg)
 {
     return register_timer(name, delay, handle, arg, TIMER_PERIODICAL);
+}
+
+int cancel_timer(timer_t *timer)
+{
+    int ret = -1;
+    struct list_node *cur_node, *next_node;
+    timer_t *iter_timer;
+
+    KASSERT(timer != NULL);
+    KASSERT(!list_is_empty(&timer_list));
+
+    next_node = timer_list.next;
+    while (next_node != &timer_list) {
+        cur_node = next_node;
+        next_node = cur_node->next;
+        iter_timer = list_entry(cur_node, timer_t, node);
+        if (iter_timer == timer) {
+            list_delete(&iter_timer->node);
+            free_timer(iter_timer);
+            ret = 0;
+            break;
+        }
+    }
+
+    return ret;
 }
 
 void timer_tick(void)
@@ -183,9 +201,9 @@ void timer_tick(void)
             iter_timer = list_entry(iter_node, timer_t, node);
             if (cur_tick >= iter_timer->timeout) {
                 KDBG(DEBUG, "cur_tick 0x%x, timer %s timeout tick 0x%x\r\n",
-                    cur_tick, iter_timer->name, iter_timer->timeout);
+                     cur_tick, iter_timer->name, iter_timer->timeout);
                 iter_timer->timeout_handle(iter_timer->arg);
-                if ((iter_timer->flags & TIMER_TYPE_MASK) == TIMER_ONESHOT) {
+                if ((iter_timer->flag & TIMER_TYPE_MASK) == TIMER_ONESHOT) {
                     list_delete(&iter_timer->node);
                     free_timer(iter_timer);
                 } else {
@@ -206,7 +224,7 @@ void timer_tick(void)
 
     // FIXME: or high priority task is ready
     if (task_can_be_preempted() || (sched == true)) {
-        task_become_ready(task);
+        task_become_ready_tail(task);
         task_sched();
     }
 

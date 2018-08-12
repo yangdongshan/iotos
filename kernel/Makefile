@@ -7,12 +7,12 @@ CSRC:= irq.c \
 	   task.c \
 	   timer.c \
 	   time.c \
-	   semphore.c \
 	   mutex.c \
+	   sem.c \
 	   signal.c \
 	   mailbox.c \
 	   watchdog.c \
-	   kernel.c \
+	   kernel.c
 
 # add .S files
 ASMSRC:=

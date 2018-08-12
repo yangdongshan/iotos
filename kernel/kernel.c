@@ -1,6 +1,7 @@
 #include <task.h>
 #include <timer.h>
 #include <mm.h>
+#include <sem.h>
 
 #define IDLE_TASK_STACK_SIZE  1024
 task_t idle_task;
@@ -23,6 +24,8 @@ void os_init(void)
     timer_init();
 
     task_init();
+
+    init_sem();
 
    int id = task_create(&idle_task,
                         "idle",

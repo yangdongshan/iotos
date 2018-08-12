@@ -143,7 +143,7 @@ static void task_set_priority(task_t *task, int priority)
     leave_critical_section(state);
 }
 
-void task_addto_ready_list_head(task_t *task)
+static void task_addto_ready_list_head(task_t *task)
 {
 
     KASSERT(task->state == TASK_READY);
@@ -254,13 +254,6 @@ static inline void task_addto_suspend_list(task_t *task)
     task->state = TASK_SUSPENDED;
 }
 
-static inline void task_addto_pending_list(task_t *task)
-{
-    KASSERT(!list_in_list(&task->node));
-    list_add_tail(&task_pending_list, &task->node);
-    task->state = TASK_PENDING;
-}
-
 static inline void merge_pending_task_to_ready_list(void)
 {
     task_t *task;
@@ -269,13 +262,27 @@ static inline void merge_pending_task_to_ready_list(void)
             task = list_first_entry(&task_suspend_list, task_t, node);
             list_delete(&task->node);
             KDBG(DEBUG, "merge task %s to ready list\r\n", task->name);
-            task_become_ready(task);
+            task_become_ready_tail(task);
     }
 }
 
 /* this function should be called with interrupt disabled
  */
-void task_become_ready(task_t *task)
+void task_become_ready_head(task_t *task)
+{
+    irqstate_t state;
+
+    KDBG(DEBUG, "task %s state %d insert into ready list head\r\n",
+            task->name, task->state);
+
+    KASSERT(task->state != TASK_READY);
+    KASSERT(!list_in_list(&task->node));
+
+    task->state = TASK_READY;
+    task_addto_ready_list_head(task);
+}
+
+void task_become_ready_tail(task_t *task)
 {
     irqstate_t state;
 
@@ -483,7 +490,7 @@ int task_create(task_t *task,
     state = enter_critical_section();
 
     if (TASK_IS_AUTO_RUN(task->flags)) {
-        task_become_ready(task);
+        task_become_ready_tail(task);
     }
     task_addto_suspend_list(task);
 

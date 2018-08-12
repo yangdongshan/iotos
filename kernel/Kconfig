@@ -9,17 +9,38 @@ config TICKS_PER_SEC
     default 100
     ---help---
 
-menu "Thread properties"
+menu "Task config"
 
-config MAX_THREADM_NAME_LEN
-    int "thread name length"
-    default 32
-
-config MAX_THREAD_CNT
-    int "max thread count supported"
+config MAX_TASK_CNT
+    int "max task count supported"
     default 32
 
 endmenu
+
+menu "Timer config"
+config DYNAMIC_ALLOC_TIMER
+    bool "dynamically allocate timer"
+    default y
+
+config PRE_ALLOC_TIMER_CNT
+    int "pre-allocate timer cnt"
+    default 1
+    depends on DYNAMIC_ALLOC_TIMER
+
+endmenu
+
+menu "Semphore config"
+
+config PRE_ALLOC_HOLDER_CNT
+    int "pre-allocate semphore holder cnt"
+    default 32
+
+config DYNAMIC_ALLOC_HOLDER
+    bool "dynamically allocate semphore holder"
+    default y
+
+endmenu
+
 
 choice
     prompt "mm debug level"

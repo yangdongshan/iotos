@@ -54,6 +54,12 @@ typedef enum {
     TASK_DEAD,
 } task_state_e;
 
+typedef enum {
+    PEND_NONE = 0,
+    PEND_TIMEOUT,
+    PEND_WAKEUP,
+} pend_ret_code_t;
+
 typedef struct task {
     struct list_node node;
 
@@ -97,6 +103,8 @@ typedef struct task {
     // point to the list head where the task node is pennding
     list_head_t *pending_list;
 
+    int pend_ret_code;
+
     list_head_t wait_task_list;
 
     unsigned int exit_code;
@@ -130,7 +138,9 @@ void task_sched(void);
 
 task_t *get_cur_task(void);
 
-void task_become_ready(task_t *task);
+void task_become_ready_head(task_t *task);
+
+void task_become_ready_tail(task_t *task);
 
 bool task_can_be_preempted(void);
 
