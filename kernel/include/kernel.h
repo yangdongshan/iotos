@@ -13,7 +13,7 @@
 
 //#include "mutex.h"
 
-#include "semphore.h"
+#include "sem.h"
 
 //#include "waitqueue.h"
 

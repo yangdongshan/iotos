@@ -9,45 +9,90 @@ typedef int (*print_func)(const char *str, int len);
 
 int kdebug_print(const char *fmt, ...);
 
-enum {
-    ERR = 0,
-    WARN,
-    INFO,
-    DEBUG,
-};
+#define    ERR  0
+#define    WARN 1
+#define    INFO 2
+#define    DEBUG 3
 
-#ifndef CONFIG_KERNEL_DEBUG_LEVLE
-#define CONFIG_KERNEL_DEBUG_LEVLE DEBUG
-#endif
 
 #ifdef CONFIG_KERNEL_DEBUG
 
-#ifdef CONFIG_KERNEL_DEBUG_LEVEL_ERR
+#if (CONFIG_KERNEL_DEBUG_LEVEL_ERR)
 #define KERNEL_DEBUG_LEVLE ERR
-#elif CONFIG_KERNEL_DEBUG_LEVEL_WARN
-#define KERNEL_DEBUG_LEVLE WARN
-#elif CONFIG_KERNEL_DEBUG_LEVEL_INFO
+#warning "debug"
+#elif (CONFIG_KERNEL_DEBUG_LEVEL_INFO)
 #define KERNEL_DEBUG_LEVLE INFO
-#elif CONFIG_KERNEL_DEBUG_LEVEL_DEBUG
+#warning "warn"
+#elif (CONFIG_KERNEL_DEBUG_LEVEL_WARN)
+#define KERNEL_DEBUG_LEVLE WARN
+#warning "info"
+#elif (CONFIG_KERNEL_DEBUG_LEVEL_DEBUG)
 #define KERNEL_DEBUG_LEVLE DEBUG
 #else
+#warning "err"
 #define KERNEL_DEBUG_LEVLE ERR
 #endif
 
-//kdebug_print("["#level"]: "#fmt, ##args);
-#define KDBG(level, fmt, args...) \
+#if (KERNEL_DEBUG_LEVLE >= DEBUG)
+#define KDBG(fmt, args...) \
     do { \
-        if (level <= KERNEL_DEBUG_LEVLE) { \
             irqstate_t __state; \
             __state = enter_critical_section(); \
-            kdebug_print("["#level"] "fmt, ##args); \
+            kdebug_print("[DBG] "fmt, ##args); \
             leave_critical_section(__state); \
-        } \
     } while (0)
 
 #else
-#define KDBG(level, fmt, args...)
+#define KDBG(fmt, args...)
 #endif // CONFIG_KERNEL_DEBUG
+
+#if (KERNEL_DEBUG_LEVLE >= INFO)
+#define KINFO(fmt, args...) \
+    do { \
+            irqstate_t __state; \
+            __state = enter_critical_section(); \
+            kdebug_print("[INFO] "fmt, ##args); \
+            leave_critical_section(__state); \
+    } while (0)
+
+#else
+#define KINFO(fmt, args...)
+#endif // CONFIG_KERNEL_DEBUG
+
+#if (KERNEL_DEBUG_LEVLE >= WARN)
+#define KWARN(fmt, args...) \
+    do { \
+            irqstate_t __state; \
+            __state = enter_critical_section(); \
+            kdebug_print("[WARN] "fmt, ##args); \
+            leave_critical_section(__state); \
+    } while (0)
+
+#else
+#define KWARN(fmt, args...)
+#endif // CONFIG_KERNEL_DEBUG
+
+#if (KERNEL_DEBUG_LEVLE >= ERR)
+#define KERR(fmt, args...) \
+    do { \
+            irqstate_t __state; \
+            __state = enter_critical_section(); \
+            kdebug_print("[ERR] "fmt, ##args); \
+            leave_critical_section(__state); \
+    } while (0)
+
+#else
+#define KERR(fmt, args...)
+#endif // CONFIG_KERNEL_DEBUG
+
+#else
+
+#define KDBG(fmt, args...)
+#define KINFO(fmt, args...)
+#define KWARN(fmt, args...)
+#define KERR(fmt, args...)
+
+#endif
 
 #ifdef CONFIG_KERNEL_ASSERT
 

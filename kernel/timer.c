@@ -55,7 +55,7 @@ static timer_t *get_free_timer(void)
 
     if (list_is_empty(&free_timer_list)) {
 #ifdef CONFIG_DYNAMIC_ALLOC_TIMER
-        KDBG(DEBUG, "malloc new timer\r\n");
+        KDBG("malloc new timer\r\n");
         timer = (timer_t*)malloc(sizeof(timer_t));
         timer->flag |= DYNAMIC_ALLOC_TIMER;
         return timer;
@@ -68,7 +68,7 @@ static timer_t *get_free_timer(void)
         timer = list_first_entry(&free_timer_list, timer_t, node);
         list_delete(&timer->node);
         free_timer_cnt--;
-        KDBG(DEBUG, "get free timer from freelist, free cnt %d\r\n",
+        KDBG("get free timer from freelist, free cnt %d\r\n",
                 free_timer_cnt);
         leave_critical_section(state);
         return timer;
@@ -79,7 +79,7 @@ static void free_timer(timer_t *timer)
 {
     if ((timer->flag & DYNAMIC_ALLOC_TIMER) &&
         (free_timer_cnt >= PRE_ALLOC_TIMER_CNT)) {
-        KDBG(DEBUG, "free timer %s to memory, free cnt %d\r\n",
+        KDBG("free timer %s to memory, free cnt %d\r\n",
                 timer->name, free_timer_cnt);
         free(timer);
     } else {
@@ -88,7 +88,7 @@ static void free_timer(timer_t *timer)
         state = enter_critical_section();
         list_add_tail(&free_timer_list, &timer->node);
         free_timer_cnt++;
-        KDBG(DEBUG, "free timer %s to freelist, free cnt %d\r\n",
+        KDBG("free timer %s to freelist, free cnt %d\r\n",
                 timer->name, free_timer_cnt);
         leave_critical_section(state);
     }
@@ -139,7 +139,7 @@ static timer_t* register_timer(char *name,
 
     leave_critical_section(state);
 
-    KDBG(DEBUG, "registered %s timer %s on time list %p,\n"
+    KDBG("registered %s timer %s on time list %p,\n"
          "tick period 0x%x, timeout 0x%x\r\n",
          (timer->flag & TIMER_PERIODICAL)?
          "periodical":"oneshot", timer->name,
@@ -200,7 +200,7 @@ void timer_tick(void)
             next_node = iter_node->next;
             iter_timer = list_entry(iter_node, timer_t, node);
             if (cur_tick >= iter_timer->timeout) {
-                KDBG(DEBUG, "cur_tick 0x%x, timer %s timeout tick 0x%x\r\n",
+                KDBG("cur_tick 0x%x, timer %s timeout tick 0x%x\r\n",
                      cur_tick, iter_timer->name, iter_timer->timeout);
                 iter_timer->timeout_handle(iter_timer->arg);
                 if ((iter_timer->flag & TIMER_TYPE_MASK) == TIMER_ONESHOT) {

@@ -198,7 +198,7 @@ int sem_wait(sem_t *sem)
     task_t *cur = get_cur_task();
 
     sem->cnt--;
-    KDBG(INFO, "task %s wait sem, val %d\r\n", cur->name, sem->cnt);
+    KINFO("task %s wait sem, val %d\r\n", cur->name, sem->cnt);
 
     if (sem->cnt >= 0) {
         if (sem_add_holder(sem, cur)) {
@@ -222,7 +222,7 @@ static void sem_wait_timeout_cb(void *arg)
 
     list_delete(&task->node);
     task_become_ready_head(task);
-    KDBG(INFO, "task %s sem wait timeout\r\n",
+    KINFO("task %s sem wait timeout\r\n",
             task->name);
     task->pend_ret_code = PEND_TIMEOUT;
 }
@@ -307,7 +307,7 @@ int sem_post(sem_t *sem)
 
     sem->cnt++;
 
-    KDBG(INFO, "task %s post sem, val %d\r\n", cur->name, sem->cnt);
+    KINFO("task %s post sem, val %d\r\n", cur->name, sem->cnt);
 
     /** remove the task from sem holder,
     * if the sem is taken by cur task.

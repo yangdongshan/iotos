@@ -15,7 +15,7 @@ int msleep(unsigned int ms)
     state = enter_critical_section();
     task_t *task = get_cur_task();
 
-    KDBG(DEBUG, "task %s go to sleep\r\n", task->name);
+    KDBG("task %s go to sleep\r\n", task->name);
 
     register_oneshot_timer(task->name, ms, task_become_ready_head, task);
 

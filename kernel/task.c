@@ -59,7 +59,7 @@ void set_runqueue_bit(int priority)
     uint8_t word = priority / 32;
     uint8_t bit = priority % 32;
 
-    KDBG(DEBUG, "set runqueue word %d bit %d for priority %d\r\n", word, bit, priority);
+    KDBG("set runqueue word %d bit %d for priority %d\r\n", word, bit, priority);
     runqueue_bitmap[word] |= (1 << bit);
 }
 
@@ -71,7 +71,7 @@ static void clear_runqueue_bit(int priority)
     uint8_t bit = priority % 32;
 
     runqueue_bitmap[word] &= ~(1 << bit);
-    KDBG(DEBUG, "clear runqueue word %d bit %d for priority %d\r\n", word, bit, priority);
+    KDBG("clear runqueue word %d bit %d for priority %d\r\n", word, bit, priority);
 
 }
 static inline int get_idle_task_id(void)
@@ -173,7 +173,7 @@ static inline void set_cur_task(task_t *task)
     irqstate_t state;
 
     state = enter_critical_section();
-    KDBG(DEBUG, "set cur_task %s\r\n", task->name);
+    KDBG("set cur_task %s\r\n", task->name);
     cur_task = task;
     leave_critical_section(state);
 }
@@ -261,7 +261,7 @@ static inline void merge_pending_task_to_ready_list(void)
     while (!list_is_empty(&task_suspend_list)) {
             task = list_first_entry(&task_suspend_list, task_t, node);
             list_delete(&task->node);
-            KDBG(DEBUG, "merge task %s to ready list\r\n", task->name);
+            KDBG("merge task %s to ready list\r\n", task->name);
             task_become_ready_tail(task);
     }
 }
@@ -272,7 +272,7 @@ void task_become_ready_head(task_t *task)
 {
     irqstate_t state;
 
-    KDBG(DEBUG, "task %s state %d insert into ready list head\r\n",
+    KDBG("task %s state %d insert into ready list head\r\n",
             task->name, task->state);
 
     KASSERT(task->state != TASK_READY);
@@ -286,7 +286,7 @@ void task_become_ready_tail(task_t *task)
 {
     irqstate_t state;
 
-    KDBG(DEBUG, "task %s state %d insert into ready list tail\r\n",
+    KDBG("task %s state %d insert into ready list tail\r\n",
             task->name, task->state);
 
     KASSERT(task->state != TASK_READY);
@@ -425,7 +425,7 @@ void task_sched(void)
     task_t *new = get_new_task();
 
     if (new == NULL) {
-        KDBG(DEBUG, "no ready task in ready queue\r\n");
+        KINFO("no ready task in ready queue\r\n");
         return;
     }
 
@@ -434,7 +434,7 @@ void task_sched(void)
     if (new == old)
         return;
 
-    KDBG(DEBUG, "%s, old task %s, new task %s\r\n",
+    KDBG("%s, old task %s, new task %s\r\n",
             __func__, old->name, new->name);
 
     set_cur_task(new);
@@ -520,7 +520,7 @@ void task_sched_start(void)
     g_new_task_stack_ptr = &task->sp;
     arch_start_first_task();
 
-    KDBG(ERR, "shouldn't return here\r\n");
+    KERR("shouldn't return here\r\n");
     KASSERT(0);
 }
 
