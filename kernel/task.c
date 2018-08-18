@@ -1,7 +1,7 @@
 #include <string.h>
 #include <err.h>
 #include <irq.h>
-#include <kernel.h>
+#include <task.h>
 #include <kdebug.h>
 
 

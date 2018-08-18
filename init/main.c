@@ -1,11 +1,15 @@
 #include <typedef.h>
 #include <kdebug.h>
 #include <board.h>
-#include <kernel.h>
 #include <stm32f4xx_conf.h>
 #include <testcase.h>
+#include <task.h>
 #include <timer.h>
 #include <sem.h>
+#include <ringbuf.h>
+
+extern void os_init(void);
+extern void os_run(void);
 
 #define SYS_INIT_STACK_SIZE 1024
 task_t sys_init;
@@ -39,14 +43,21 @@ int my_timer2(void *arg)
 
 extern int task_test(void);
 
+ringbuf_t *ringbuf = NULL;
+
 static int test_task1_run(void *arg)
 {
     int cnt = 0;
 
     while(1) {
-        kdebug_print("%s cnt %d\r\n", __func__, cnt++);
-        msleep(499);
+        kdebug_print("%s cnt %d\r\n", __func__, cnt);
+        msleep(2000);
+        char data = (cnt%26) + 'a';
+        ringbuf_queue(ringbuf, data);
+        kdebug_print("ringbuf queue %c\r\n", data);
         sem_post(&sem1);
+
+        cnt++;
     }
 }
 
@@ -60,11 +71,12 @@ static int sys_init_run(void *arg)
 
     arch_systick_start();
 
-    register_periodical_timer("timer1", 699, my_timer1, NULL);
-    register_oneshot_timer("timer2",788, my_timer2, NULL);
+    register_periodical_timer("timer1", 5000, my_timer1, NULL);
+    register_oneshot_timer("timer2",10000, my_timer2, NULL);
 
-    sem_init(&sem1, 1);
+    sem_init(&sem1, 0);
 
+    ringbuf = ringbuf_init(20);
     task_create(&test_task1,
                 "test_task1",
                 10,
@@ -76,14 +88,15 @@ static int sys_init_run(void *arg)
                 0);
     task_resume(&test_task1);
 
-   task_test();
-
     while(1) {
-        kdebug_print("%s: sys_init loop %d\r\n", __func__, cnt++);
-        sem_timedwait(&sem1, 10);
+        kdebug_print("%s: sys_init loop %d\r\n", __func__, cnt);
+
         sem_wait(&sem1);
-        //msleep(1000);
-        //task_yield();
+        char data = 'P';
+        ringbuf_dequeue(ringbuf, &data);
+        kdebug_print("read ringbuf: %c\r\n", data);
+
+        cnt++;
     }
 
     return ret;
@@ -94,8 +107,6 @@ int os_start()
     arch_init();
 
     KINFO("*** welcome to iotos *** \r\n\r\n");
-
-    KINFO("os_init\r\n");
 
     os_init();
 
@@ -108,7 +119,6 @@ int os_start()
                 SYS_INIT_STACK_SIZE,
                 5,
                 0);
-
 
     os_run();
 

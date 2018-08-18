@@ -126,4 +126,4 @@ launch_qemu: $(ISO)
 	$(Q) $(QEMU) -cdrom $(ISO) -nographic #-enable-kvm
 
 download:
-	$(Q) st-flash  write $(BIN) 0x8000000
+	$(Q) st-flash --reset  write $(BIN) 0x8000000

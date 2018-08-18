@@ -1,4 +1,3 @@
-#include <kernel.h>
 #include <kdebug.h>
 
 int task_main(void *arg)

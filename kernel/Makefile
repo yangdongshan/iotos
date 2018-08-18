@@ -10,9 +10,7 @@ CSRC:= irq.c \
 	   mutex.c \
 	   sem.c \
 	   signal.c \
-	   mailbox.c \
-	   watchdog.c \
-	   kernel.c
+	   init.c
 
 # add .S files
 ASMSRC:=

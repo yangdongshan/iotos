@@ -3,17 +3,17 @@
 #include "ringbuf.h"
 
 
-inline bool ringbuf_is_empty(ringbuf_t *rb)
+static inline bool ringbuf_is_empty(ringbuf_t *rb)
 {
     return (rb->head == rb->tail);
 }
 
-inline bool ringbuf_is_full(ringbuf_t *rb)
+static inline bool ringbuf_is_full(ringbuf_t *rb)
 {
     return ((rb->head - rb->tail) & (rb->size - 1)) == (rb->size - 1);
 }
 
-inline uint32_t ringbuf_free_items(ringbuf_t *rb)
+static inline uint32_t ringbuf_free_items(ringbuf_t *rb)
 {
     return ((rb->head - rb->tail) & (rb->size - 1));
 }
@@ -100,7 +100,7 @@ int ringbuf_dequeue_arr(ringbuf_t *rb, char *data, uint32_t len)
 
 int ringbuf_peek(ringbuf_t *rb, char *data, uint32_t index)
 {
-    if(index >= ringbuf_num_items(rb)) {
+    if(index >= ringbuf_free_items(rb)) {
         return 0;
     }
 
