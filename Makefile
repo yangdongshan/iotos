@@ -41,6 +41,7 @@ LIBDIR := $(CHIP_DIR) \
 		  $(PORT_DIR)/../common \
 		  init \
 		  libc \
+		  modules \
 		  test
 
 LIBDIR += kernel
@@ -61,6 +62,7 @@ CFLAGS += -I$(ROOTDIR)/$(CHIP_DIR)/include \
           -I$(ROOTDIR)/include \
           -I$(ROOTDIR)/libc/include \
 		  -I$(ROOTDIR)/test/include \
+		  -I$(ROOTDIR)/modules/ringbuf \
 
 
 export LDDIR
@@ -97,9 +99,6 @@ lib: $(LIBDIR)
 	$(Q) $(foreach dir, $(LIBDIR), \
 		$(MAKE) -C $(dir) obj || exit "$$?";\
 		$(MAKE) -C $(dir) lib libname=lib$(shell basename $(dir)).a || exit "$$?";)
-
-
-
 
 
 .PHONY: menuconfig distclean silentoldconfig clean launch_qemu download
