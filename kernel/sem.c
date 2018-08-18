@@ -164,7 +164,6 @@ static int sem_remove_holder(sem_t *sem, task_t *task)
 
     KASSERT(sem != NULL);
     KASSERT(task != NULL);
-    KASSERT(!list_is_empty(&sem->holder_list));
 
     next_node = sem->holder_list.next;
     while (next_node != &sem->holder_list) {
