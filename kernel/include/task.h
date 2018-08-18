@@ -114,7 +114,7 @@ typedef struct task {
 
 
 
-void task_init(void);
+void task_init_early(void);
 
 void task_sched_start(void);
 

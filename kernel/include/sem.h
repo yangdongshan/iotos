@@ -24,7 +24,7 @@ typedef struct sem {
 } sem_t;
 
 
-void init_sem(void);
+void sem_init_early(void);
 
 int sem_init(sem_t *sem, int val);
 

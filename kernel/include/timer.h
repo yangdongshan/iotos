@@ -19,7 +19,7 @@ typedef struct timer {
     char *name;
 } timer_t;
 
-void timer_init(void);
+void timer_init_early(void);
 
 void timer_tick(void);
 

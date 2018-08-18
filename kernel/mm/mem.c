@@ -15,7 +15,7 @@ const size_t msp_stack_size = CONFIG_BOOT_STACK_SIZE;
 const size_t msp_stack_size = 0x400;
 #endif
 
-void mm_init(void)
+void mm_init_early(void)
 {
     size_t size = _estack - _ebss - msp_stack_size;
 

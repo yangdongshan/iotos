@@ -3,7 +3,7 @@
 
 #include <typedef.h>
 
-void mm_init(void);
+void mm_init_early(void);
 
 void *mm_malloc( size_t size );
 void *mm_calloc( size_t num, size_t size );

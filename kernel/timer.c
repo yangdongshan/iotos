@@ -31,7 +31,7 @@ static list_head_t free_timer_list;
 static list_head_t timer_list;
 static unsigned int free_timer_cnt;
 
-void timer_init(void)
+void timer_init_early(void)
 {
     int i;
 

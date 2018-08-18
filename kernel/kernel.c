@@ -19,13 +19,13 @@ static int idle_main(void *arg)
 
 void os_init(void)
 {
-    mm_init();
+    mm_init_early();
 
-    timer_init();
+    timer_init_early();
 
-    task_init();
+    task_init_early();
 
-    init_sem();
+    sem_init_early();
 
    int id = task_create(&idle_task,
                         "idle",

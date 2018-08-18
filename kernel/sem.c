@@ -84,7 +84,7 @@ static void free_holder(sem_holder_t *holder)
     }
 }
 
-void init_sem(void)
+void sem_init_early(void)
 {
     int i;
 
@@ -216,7 +216,7 @@ int sem_wait(sem_t *sem)
     return ret;
 }
 
-static void sem_wait_timeout_cb(void *arg)
+static int sem_wait_timeout_cb(void *arg)
 {
     task_t *task = (task_t*)arg;
 
@@ -225,6 +225,8 @@ static void sem_wait_timeout_cb(void *arg)
     KINFO("task %s sem wait timeout\r\n",
             task->name);
     task->pend_ret_code = PEND_TIMEOUT;
+
+    return 0;
 }
 
 /** If wait timeout, return SEM_TIMEOUT

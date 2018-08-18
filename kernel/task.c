@@ -199,7 +199,7 @@ static int task_allocate_id(task_t *task)
     return id;
 }
 
-void task_init(void)
+void task_init_early(void)
 {
     unsigned int i;
 
@@ -491,8 +491,9 @@ int task_create(task_t *task,
 
     if (TASK_IS_AUTO_RUN(task->flags)) {
         task_become_ready_tail(task);
+    } else {
+        task_addto_suspend_list(task);
     }
-    task_addto_suspend_list(task);
 
     leave_critical_section(state);
 
