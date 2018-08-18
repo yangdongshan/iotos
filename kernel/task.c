@@ -27,10 +27,10 @@ char *g_new_task_stack_ptr;
 #define RUNQUEUE_WORD BITS_U32_CNT(LOWEST_TASK_PRIORITY + 1)
 static uint32_t runqueue_bitmap[RUNQUEUE_WORD];
 
-static int get_runqueue_first_set_bit(void)
+static int get_prefer_task_priority(void)
 {
     int i;
-    int bit = 0;
+    int bit;
 
     for (i = 0; i < RUNQUEUE_WORD; i++) {
         if (runqueue_bitmap[i] != 0)
@@ -42,6 +42,7 @@ static int get_runqueue_first_set_bit(void)
 
     int word = runqueue_bitmap[i];
 
+    bit = 0;
     while (1) {
         if (word & (1 << bit))
             break;
@@ -59,7 +60,6 @@ void set_runqueue_bit(int priority)
     uint8_t word = priority / 32;
     uint8_t bit = priority % 32;
 
-    KDBG("set runqueue word %d bit %d for priority %d\r\n", word, bit, priority);
     runqueue_bitmap[word] |= (1 << bit);
 }
 
@@ -71,9 +71,8 @@ static void clear_runqueue_bit(int priority)
     uint8_t bit = priority % 32;
 
     runqueue_bitmap[word] &= ~(1 << bit);
-    KDBG("clear runqueue word %d bit %d for priority %d\r\n", word, bit, priority);
-
 }
+
 static inline int get_idle_task_id(void)
 {
     return idle_task_id;
@@ -119,17 +118,9 @@ static void task_set_name(task_t *task, const char *name)
 {
     irqstate_t state;
 
-    size_t name_len = strlen(name);
-    if (name_len >= MAX_TASK_NAME_LEN) {
-        name_len = MAX_TASK_NAME_LEN - 1;
-    }
-
-    memset(task->name, 0, MAX_TASK_NAME_LEN);
-
     state = enter_critical_section();
-    strncpy(task->name, name, name_len);
+    task->name = name;
     leave_critical_section(state);
-
 }
 
 static void task_set_priority(task_t *task, int priority)
@@ -173,7 +164,6 @@ static inline void set_cur_task(task_t *task)
     irqstate_t state;
 
     state = enter_critical_section();
-    KDBG("set cur_task %s\r\n", task->name);
     cur_task = task;
     leave_critical_section(state);
 }
@@ -340,7 +330,6 @@ void task_yield(void)
     task_sched();
 
     leave_critical_section(state);
-
 }
 
 int task_resume(task_t *task)
@@ -384,7 +373,7 @@ task_t* get_new_task()
 {
     task_t *task;
 
-    int priority = get_runqueue_first_set_bit();
+    int priority = get_prefer_task_priority();
 
     // no task other than idle is ready
     if (priority == -1) {
@@ -399,14 +388,13 @@ task_t* get_new_task()
         clear_runqueue_bit(priority);
     }
 
-out:
     return task;
 }
 
 bool task_can_be_preempted(void)
 {
     task_t *cur = get_cur_task();
-    int highest = get_runqueue_first_set_bit();
+    int highest = get_prefer_task_priority();
 
     if (cur && (highest < cur->priority)) {
         return true;
@@ -425,7 +413,6 @@ void task_sched(void)
     task_t *new = get_new_task();
 
     if (new == NULL) {
-        KINFO("no ready task in ready queue\r\n");
         return;
     }
 
@@ -433,9 +420,6 @@ void task_sched(void)
 
     if (new == old)
         return;
-
-    KDBG("%s, old task %s, new task %s\r\n",
-            __func__, old->name, new->name);
 
     set_cur_task(new);
     g_new_task_stack_ptr = &new->sp;
