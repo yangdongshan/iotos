@@ -37,7 +37,6 @@ static sem_holder_t pre_alloc_holder[PRE_ALLOC_HOLDER_CNT];
 static sem_holder_t* alloc_holder(void)
 {
     int size;
-    int i;
     sem_holder_t *holder;
 
     size = sizeof(sem_holder_t);
@@ -55,7 +54,6 @@ static sem_holder_t* alloc_holder(void)
 static sem_holder_t* get_holder(void)
 {
     sem_holder_t *holder;
-    int ret;
 
     if (list_is_empty(&free_holder_list)) {
 #ifdef CONFIG_DYNAMIC_ALLOC_HOLDER
