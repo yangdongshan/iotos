@@ -94,7 +94,7 @@ int wq_process(void *arg)
     workq_t *wq = &workqueue;
     tick_t delay_tick;
     tick_t min_remain_tick = 0xffffffff;
-    tick_t remain_tick;
+    tick_t remain_tick, elapsed_tick;
     tick_t cur_tick, prev_tick;
     irqstate_t state;
 
@@ -118,13 +118,14 @@ int wq_process(void *arg)
                 cur_tick = get_sys_tick();
                 min_remain_tick -= cur_tick - prev_tick;
                 iter_worker = list_entry(cur_node, worker_t, node);
-                remain_tick = cur_tick - iter_worker->queue_tick;
-                if (remain_tick >= iter_worker->delay) {
+                elapsed_tick = cur_tick - iter_worker->queue_tick;
+                if (elapsed_tick >= iter_worker->delay) {
                     list_delete(&iter_worker->node);
                     leave_critical_section(state);
                     iter_worker->do_work(iter_worker->arg);
                     state = enter_critical_section();
                 } else {
+                    remain_tick = iter_worker->delay - elapsed_tick;
                     if (min_remain_tick > remain_tick) {
                         min_remain_tick = remain_tick;
                     }
