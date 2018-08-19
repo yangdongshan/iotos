@@ -17,5 +17,7 @@ static inline tick_t get_sys_tick(void)
     return g_sys_ticks;
 }
 
+int msleep(unsigned int ms);
+
 #endif // TIME_H
 
