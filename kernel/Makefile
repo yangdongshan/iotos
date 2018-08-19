@@ -10,7 +10,8 @@ CSRC:= irq.c \
 	   mutex.c \
 	   sem.c \
 	   signal.c \
-	   init.c
+	   workqueue.c \
+	   init.c \
 
 # add .S files
 ASMSRC:=
