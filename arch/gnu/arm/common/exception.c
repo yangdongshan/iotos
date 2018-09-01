@@ -17,9 +17,10 @@ static dump_exception_frame(struct context_frame *cf)
                 cf->xpsr);
 }
 
-
 void HardFault_Handler(void)
 {
+    kdebug_print("%s\r\n", __func__);
+
     __asm__ (
         "push {r4-r11}\t\n"
         "mov r0, sp\t\n"
@@ -31,6 +32,8 @@ void HardFault_Handler(void)
 
 void MemManage_Handler(void)
 {
+    kdebug_print("%s\r\n", __func__);
+
     __asm__ (
         "push {r4-r11}\t\n"
         "mov r0, sp\t\n"
@@ -42,6 +45,8 @@ void MemManage_Handler(void)
 
 void BusFault_Handler(void)
 {
+    kdebug_print("%s\r\n", __func__);
+
     __asm__ (
         "push {r4-r11}\t\n"
         "mov r0, sp\t\n"
@@ -54,6 +59,8 @@ void BusFault_Handler(void)
 
 void UsageFault_Handler(void)
 {
+    kdebug_print("%s\r\n", __func__);
+
     __asm__ (
         "push {r4-r11}\t\n"
         "mov r0, sp\t\n"
