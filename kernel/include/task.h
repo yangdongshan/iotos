@@ -3,6 +3,7 @@
 
 #include <port.h>
 #include <list.h>
+#include <timer.h>
 
 #ifndef CONFIG_MAX_TASK_NAME_LEN
 #define MAX_TASK_NAME_LEN (32)
@@ -100,6 +101,7 @@ typedef struct task {
     // misc flags
     unsigned int flags;
 
+    timer_t wait_timer;
     // point to the list head where the task node is pennding
     list_head_t *pending_list;
 
