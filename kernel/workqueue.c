@@ -50,6 +50,10 @@ int workqueue_queue_worker(worker_t *worker)
     return WQ_OK;
 }
 
+// FIXME: this API has bug.
+// if cancel some work, then queue the work,
+// work process with infinite run, as the
+// worker's next points to itself
 int workqueue_cancel_worker(worker_t *worker)
 {
     irqstate_t state;
@@ -93,7 +97,7 @@ int wq_process(void *arg)
 
     workq_t *wq = &workqueue;
     tick_t delay_tick;
-    tick_t min_remain_tick = 0xffffffff;
+    tick_t min_remain_tick;
     tick_t remain_tick, elapsed_tick;
     tick_t cur_tick, prev_tick;
     irqstate_t state;
@@ -105,6 +109,7 @@ int wq_process(void *arg)
     struct list_node *cur_node;
     worker_t *iter_worker;
     while (1) {
+        min_remain_tick = 0xffffffff;
         state = enter_critical_section();
         if (list_is_empty(&wq->worker_list)) {
             min_remain_tick = delay_tick;
