@@ -23,12 +23,14 @@ void timer_init_early(void);
 
 void timer_tick(void);
 
-timer_t* register_oneshot_timer(char *name,
+timer_t* register_oneshot_timer(timer_t *timer,
+                    char *name,
                     unsigned int delay,
                     timeout_cb handle,
                     void *arg);
 
-timer_t* register_periodical_timer(char *name,
+timer_t* register_periodical_timer(timer_t *timer,
+                    char *name,
                     unsigned int delay,
                     timeout_cb handle,
                     void *arg);
