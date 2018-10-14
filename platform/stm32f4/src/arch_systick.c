@@ -4,7 +4,7 @@
 
 #include "stm32f4xx_rcc.h"
 
-void arch_systick_start(void)
+void systick_start(void)
 {
     RCC_ClocksTypeDef rcc_clock;
 

@@ -11,6 +11,7 @@ CSRC:= irq.c \
 	   sem.c \
 	   signal.c \
 	   workqueue.c \
+	   idle.c \
 	   init.c \
 
 # add .S files

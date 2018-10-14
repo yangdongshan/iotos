@@ -1,13 +1,14 @@
 #include <typedef.h>
 #include <kdebug.h>
 #include <board.h>
-#include <stm32f4xx_conf.h>
 #include <testcase.h>
 #include <task.h>
 #include <timer.h>
+#include <time.h>
 #include <sem.h>
 #include <ringbuf.h>
 #include <workqueue.h>
+#include <platform.h>
 
 extern void os_init(void);
 extern void os_run(void);
@@ -86,6 +87,8 @@ static int test_task1_run(void *arg)
 
         cnt++;
     }
+
+    return 0;
 }
 
 static int sys_init_run(void *arg)
@@ -97,7 +100,7 @@ static int sys_init_run(void *arg)
     KINFO("board_init\r\n");
     board_init();
 
-    arch_systick_start();
+    systick_start();
 
     register_periodical_timer(&timer1, "timer1", 5000, my_timer1, NULL);
     register_oneshot_timer(&timer2, "timer2",10000, my_timer2, NULL);
@@ -132,7 +135,7 @@ static int sys_init_run(void *arg)
 
 int os_start()
 {
-    arch_init();
+    platform_init();
 
     KINFO("*** welcome to iotos *** \r\n\r\n");
 

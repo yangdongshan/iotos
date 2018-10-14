@@ -19,17 +19,13 @@ int kdebug_print(const char *fmt, ...);
 
 #if (CONFIG_KERNEL_DEBUG_LEVEL_ERR)
 #define KERNEL_DEBUG_LEVLE ERR
-#warning "debug"
 #elif (CONFIG_KERNEL_DEBUG_LEVEL_INFO)
 #define KERNEL_DEBUG_LEVLE INFO
-#warning "warn"
 #elif (CONFIG_KERNEL_DEBUG_LEVEL_WARN)
 #define KERNEL_DEBUG_LEVLE WARN
-#warning "info"
 #elif (CONFIG_KERNEL_DEBUG_LEVEL_DEBUG)
 #define KERNEL_DEBUG_LEVLE DEBUG
 #else
-#warning "err"
 #define KERNEL_DEBUG_LEVLE ERR
 #endif
 

@@ -17,10 +17,10 @@ int msleep(unsigned int ms)
 
     KDBG("task %s go to sleep\r\n", task->name);
 
-    register_oneshot_timer(&task->wait_timer, task->name, ms, task_become_ready_head, task);
+    register_oneshot_timer(&task->wait_timer, task->name, ms, (timeout_cb)task_become_ready_head, task);
 
     task->state = TASK_SLEEPING;
-    task_sched();
+    task_switch();
 
     leave_critical_section(state);
 

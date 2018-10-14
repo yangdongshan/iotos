@@ -3,6 +3,7 @@
 #include <mm.h>
 #include <sem.h>
 #include <workqueue.h>
+#include <idle.h>
 
 /** idle task config
  */
@@ -29,37 +30,8 @@
 
 #define WQ_TAKS_NAME "workqueue"
 
-
 task_t wq_task;
 static unsigned char wq_task_stack[WQ_TASK_STACK_SIZE];
-
-task_t idle_task;
-static unsigned char idle_task_stack[IDLE_TASK_STACK_SIZE];
-
-static int idle_main(void *arg)
-{
-    while (1) {
-        ;;
-    }
-
-    return 0;
-}
-
-static void create_idle_task(void)
-{
-   int id = task_create(&idle_task,
-                        "idle",
-                        LOWEST_TASK_PRIORITY,
-                        idle_main,
-                        NULL,
-                        idle_task_stack,
-                        IDLE_TASK_STACK_SIZE,
-                        5, 0);
-
-   if (id != -1) {
-        set_idle_task_id(id);
-   }
-}
 
 static void create_workqueue_task(void)
 {
