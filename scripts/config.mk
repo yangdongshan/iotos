@@ -1,10 +1,12 @@
 PROJNAME := iotos
 
-ARCH := cortex-m4
+ARCH := arm
 
-CHIP_FAMILY := stm32f4
+SUBARCH := armv7m
 
 BOARD := stm32f429discovery
+
+PLATFORM := stm32f4
 
 TOOLCHAIN ?= arm-none-eabi-
 
@@ -58,7 +60,7 @@ ARFLAGS := rcs
 
 LDFLAGS := -nostartfiles \
 
-LINKER_FILE := $(ROOTDIR)/arch/$(ARCH)/$(CHIP_FAMILY)/boot/src/stm32_flash.ld
+LINKER_FILE := $(ROOTDIR)/board/$(BOARD)/src/stm32_flash.ld
 
 
 ST_FLASH := st-flash

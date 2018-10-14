@@ -62,9 +62,10 @@ typedef enum {
 } pend_ret_code_t;
 
 typedef struct task {
+    addr_t sp;
+
     struct list_node node;
 
-    addr_t sp;
     // assume stack grows downside
     void *sp_alloc_addr;
     unsigned int stack_size;

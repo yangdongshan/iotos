@@ -10,7 +10,6 @@
 #define BITS_U32_CNT(bits) ((bits + 31)/32)
 
 static task_t *task_id_table[MAX_TASK_CNT];
-static task_t *cur_task = NULL;
 
 static int idle_task_id = -1;
 
@@ -20,8 +19,8 @@ static struct list_node task_ready_list[LOWEST_TASK_PRIORITY + 1];
 static struct list_node task_suspend_list;
 static struct list_node task_pending_list;
 
-char *g_cur_task_stack_ptr;
-char *g_new_task_stack_ptr;
+task_t *g_cur_task = NULL;
+task_t *g_new_task = NULL;
 
 // FIXME assume max task priority is not more than 32
 #define RUNQUEUE_WORD BITS_U32_CNT(LOWEST_TASK_PRIORITY + 1)
@@ -156,18 +155,18 @@ static void task_addto_ready_list_tail(task_t *task)
 
 task_t *get_cur_task(void)
 {
-    return cur_task;
+    return g_cur_task;
 }
-
+/*
 static inline void set_cur_task(task_t *task)
 {
     irqstate_t state;
 
     state = enter_critical_section();
-    cur_task = task;
+    g_cur_task = task;
     leave_critical_section(state);
 }
-
+*/
 static int task_allocate_id(task_t *task)
 {
     irqstate_t state;
@@ -421,9 +420,7 @@ void task_sched(void)
     if (new == old)
         return;
 
-    set_cur_task(new);
-    g_new_task_stack_ptr = &new->sp;
-    g_cur_task_stack_ptr = &old->sp;
+    g_new_task = new;
     arch_context_switch();
 }
 
@@ -499,10 +496,9 @@ void task_sched_start(void)
     }
     task = get_new_task();
     task->state = TASK_RUNNING;
-    set_cur_task(task);
+    g_new_task = task;
     leave_critical_section(state);
 
-    g_new_task_stack_ptr = &task->sp;
     arch_start_first_task();
 
     KERR("shouldn't return here\r\n");

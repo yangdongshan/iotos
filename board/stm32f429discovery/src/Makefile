@@ -1,9 +1,10 @@
 # add extra CFLAGS
-CFLAGS += -Wno-misleading-indentation
+CFLAGS +=
 
 # add .c files
-CSRC:= system_stm32f4xx.c \
-       stm32f4xx_it.c
+CSRC:= board.c \
+	   stm32f4xx_it.c \
+	   system_stm32f4xx.c
 
 # add .S files
 ASMSRC:= startup_stm32f4xx.S

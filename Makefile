@@ -29,16 +29,10 @@ ARFLAGS +=
 
 LDFLAGS +=
 
-CHIP_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/chip
-BOARD_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/$(BOARD)
-PORT_DIR := arch/gnu/arm/armv7-m
-BOOT_DIR := arch/$(ARCH)/$(CHIP_FAMILY)/boot
-
 # library directory
-LIBDIR := $(CHIP_DIR) \
-          $(BOARD_DIR) \
-		  $(PORT_DIR) \
-		  $(PORT_DIR)/../common \
+LIBDIR := arch/$(ARCH)/$(SUBARCH) \
+          board/$(BOARD) \
+		  platform/$(PLATFORM) \
 		  init \
 		  libc \
 		  modules \
@@ -52,12 +46,11 @@ export LIBS
 LDDIR += $(addprefix -L$(ROOTDIR)/,$(LIBDIR))
 LDLIB += $(addprefix -l,$(foreach dir, $(LIBDIR), $(shell basename $(dir))))
 
-CFLAGS += -I$(ROOTDIR)/$(CHIP_DIR)/include \
-		  -I$(ROOTDIR)/$(CHIP_DIR)/peripherals/include \
-		  -I$(ROOTDIR)/$(BOOT_DIR)/include \
-		  -I$(ROOTDIR)/$(BOARD_DIR)/include \
-		  -I$(ROOTDIR)/$(PORT_DIR) \
-		  -I$(ROOTDIR)/$(PORT_DIR)/../common \
+CFLAGS += -I$(ROOTDIR)/arch/$(ARCH)/$(SUBARCH) \
+		  -I$(ROOTDIR)/arch/$(ARCH)/common \
+		  -I$(ROOTDIR)/platform/$(PLATFORM)/peripherals/include \
+		  -I$(ROOTDIR)/platform/$(PLATFORM)/include \
+		  -I$(ROOTDIR)/board/$(BOARD)/include \
           -I$(ROOTDIR)/kernel/include \
           -I$(ROOTDIR)/include \
           -I$(ROOTDIR)/libc/include \
@@ -72,16 +65,16 @@ export CFLAGS
 export ARFLAGS
 export LDFLAGS
 
-ELF=$(BOOT_DIR)/$(PROJNAME).elf
-HEX=$(BOOT_DIR)/$(PROJNAME).hex
-BIN=$(BOOT_DIR)/$(PROJNAME).bin
-SREC=$(BOOT_DIR)/$(PROJNAME).srec
-MAP=$(BOOT_DIR)/$(PROJNAME).map
+ELF=$(ROOTDIR)/board/$(BOARD)/$(PROJNAME).elf
+HEX=$(ROOTDIR)/board/$(BOARD)/$(PROJNAME).hex
+BIN=$(ROOTDIR)/board/$(BOARD)/$(PROJNAME).bin
+SREC=$(ROOTDIR)/board/$(BOARD)/$(PROJNAME).srec
+MAP=$(ROOTDIR)/board/$(BOARD)/$(PROJNAME).map
 
 all: $(ELF)
 
 $(ELF): lib
-	$(Q) $(MAKE) -C $(BOOT_DIR) exe elf=$(ROOTDIR)/$(ELF) linker_file=$(LINKER_FILE)
+	$(Q) $(MAKE) -C board/$(BOARD) exe elf=$@ linker_file=$(LINKER_FILE)
 	$(Q) echo "OBJCOPY $(HEX)"
 	$(Q) $(OBJCOPY) -O ihex $@ $(HEX)
 	$(Q) echo "OBJCOPY $(BIN)"
