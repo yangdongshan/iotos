@@ -1,10 +1,12 @@
 PROJNAME := iotos
 
-ARCH := cortex-m4
+ARCH := arm
 
-CHIP_FAMILY := stm32f4
+SUBARCH := armv7m
 
 BOARD := stm32f429discovery
+
+PLATFORM := stm32f4
 
 TOOLCHAIN ?= arm-none-eabi-
 
@@ -13,7 +15,7 @@ QEMU? := $(CONFIG_QEMU)
 CC := $(TOOLCHAIN)gcc
 export CC
 
-AS := $(TOOLCHAIN)as
+AS := $(TOOLCHAIN)gcc
 export AS
 
 AR := $(TOOLCHAIN)ar
@@ -29,7 +31,8 @@ NM := $(TOOLCHAIN)nm
 SIZE := $(TOOLCHAIN)size
 
 CFLAGS := -Wall \
-          -g \
+          -ggdb \
+		  -gdwarf \
           -std=c99 \
           -mlittle-endian \
           -mthumb \
@@ -38,7 +41,7 @@ CFLAGS := -Wall \
           -mfpu=fpv4-sp-d16 \
           -Wdouble-promotion \
           -finline \
-          -MT -MP -MD 
+          -MT -MP -MD
           #-ffreestanding \
 
 ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),0)
@@ -57,7 +60,7 @@ ARFLAGS := rcs
 
 LDFLAGS := -nostartfiles \
 
-LINKER_FILE := $(ROOTDIR)/arch/$(ARCH)/$(CHIP_FAMILY)/boot/src/stm32_flash.ld
+LINKER_FILE := $(ROOTDIR)/board/$(BOARD)/src/stm32_flash.ld
 
 
 ST_FLASH := st-flash

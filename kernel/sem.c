@@ -205,7 +205,7 @@ int sem_wait(sem_t *sem)
         // FIXME: priority inherit
         list_add_tail(&sem->wait_list, &cur->node);
         cur->state = TASK_PENDING;
-        task_sched();
+        task_switch();
     }
 
     leave_critical_section(state);
@@ -253,7 +253,7 @@ int sem_timedwait(sem_t *sem, int ms)
         cur->pend_ret_code = PEND_NONE;
         sem->timer = register_oneshot_timer(&cur->wait_timer, "sem", ms,
                             sem_wait_timeout_cb, cur);
-        task_sched();
+        task_switch();
         if (cur->pend_ret_code == PEND_TIMEOUT) {
             sem->cnt++;
             ret = SEM_TIMEOUT;
@@ -328,7 +328,7 @@ int sem_post(sem_t *sem)
 
 
             task_become_ready_tail(cur);
-            task_sched();
+            task_switch();
         }
     }
     leave_critical_section(state);

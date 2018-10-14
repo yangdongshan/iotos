@@ -66,10 +66,11 @@ void NMI_Handler(void)
   * @param  None
   * @retval None
   */
+/*
 void SVC_Handler(void)
 {
 }
-
+*/
 /**
   * @brief  This function handles Debug Monitor exception.
   * @param  None

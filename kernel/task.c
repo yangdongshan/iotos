@@ -10,7 +10,6 @@
 #define BITS_U32_CNT(bits) ((bits + 31)/32)
 
 static task_t *task_id_table[MAX_TASK_CNT];
-static task_t *cur_task = NULL;
 
 static int idle_task_id = -1;
 
@@ -20,8 +19,8 @@ static struct list_node task_ready_list[LOWEST_TASK_PRIORITY + 1];
 static struct list_node task_suspend_list;
 static struct list_node task_pending_list;
 
-char *g_cur_task_stack_ptr;
-char *g_new_task_stack_ptr;
+task_t *g_cur_task = NULL;
+task_t *g_new_task = NULL;
 
 // FIXME assume max task priority is not more than 32
 #define RUNQUEUE_WORD BITS_U32_CNT(LOWEST_TASK_PRIORITY + 1)
@@ -73,14 +72,14 @@ static void clear_runqueue_bit(int priority)
     runqueue_bitmap[word] &= ~(1 << bit);
 }
 
-static inline int get_idle_task_id(void)
-{
-    return idle_task_id;
-}
-
 void set_idle_task_id(int id)
 {
     idle_task_id = id;
+}
+
+int get_idle_task_id(void)
+{
+    return idle_task_id;
 }
 
 static inline task_t* idle_task(void)
@@ -94,6 +93,27 @@ static inline task_t* get_task_by_id(int task_id)
         return NULL;
 
     return task_id_table[task_id];
+}
+
+static int alloc_task_id(task_t *task)
+{
+    irqstate_t state;
+    int i;
+    int id = -1;
+
+    state = enter_critical_section();
+
+    for (i = 0; i < MAX_TASK_CNT; i++) {
+        if (task_id_table[i] == NULL) {
+            id = i;
+            task_id_table[id] = task;
+            task->task_id = id;
+            break;
+        }
+    }
+
+    leave_critical_section(state);
+    return id;
 }
 
 static inline bool task_id_valid(int th_id)
@@ -114,13 +134,23 @@ static inline bool task_is_valid(int task_id)
     }
 }
 
+static inline void _task_set_name(task_t *task, const char *name)
+{
+    task->name = name;
+}
+
 static void task_set_name(task_t *task, const char *name)
 {
     irqstate_t state;
 
     state = enter_critical_section();
-    task->name = name;
+    _task_set_name(task, name);
     leave_critical_section(state);
+}
+
+static inline void _task_set_priority(task_t *task, int priority)
+{
+    task->priority = priority;
 }
 
 static void task_set_priority(task_t *task, int priority)
@@ -128,9 +158,7 @@ static void task_set_priority(task_t *task, int priority)
     irqstate_t state;
 
     state = enter_critical_section();
-
-    task->priority = priority;
-
+    _task_set_priority(task, priority);
     leave_critical_section(state);
 }
 
@@ -156,38 +184,19 @@ static void task_addto_ready_list_tail(task_t *task)
 
 task_t *get_cur_task(void)
 {
-    return cur_task;
+    return g_cur_task;
 }
-
+/*
 static inline void set_cur_task(task_t *task)
 {
     irqstate_t state;
 
     state = enter_critical_section();
-    cur_task = task;
+    g_cur_task = task;
     leave_critical_section(state);
 }
+*/
 
-static int task_allocate_id(task_t *task)
-{
-    irqstate_t state;
-    int i;
-    int id = -1;
-
-    state = enter_critical_section();
-
-    for (i = 0; i < MAX_TASK_CNT; i++) {
-        if (task_id_table[i] == NULL) {
-            id = i;
-            task_id_table[id] = task;
-            task->task_id = id;
-            break;
-        }
-    }
-
-    leave_critical_section(state);
-    return id;
-}
 
 void task_init_early(void)
 {
@@ -223,8 +232,8 @@ static void task_setup_initial_stack(task_t *task)
 
     addr_t stack_top = (addr_t)task->sp_alloc_addr + task->stack_size;
 
-    // align at 8 bytes
-    stack_top = stack_top & (~0x07ul);
+    // align at 16 bytes
+    stack_top = stack_top & (~0x0ful);
     task->stack_size = stack_top - (addr_t)task->sp_alloc_addr;
 
     cf = (struct context_frame*)stack_top;
@@ -260,8 +269,6 @@ static inline void merge_pending_task_to_ready_list(void)
  */
 void task_become_ready_head(task_t *task)
 {
-    irqstate_t state;
-
     KDBG("task %s state %d insert into ready list head\r\n",
             task->name, task->state);
 
@@ -274,8 +281,6 @@ void task_become_ready_head(task_t *task)
 
 void task_become_ready_tail(task_t *task)
 {
-    irqstate_t state;
-
     KDBG("task %s state %d insert into ready list tail\r\n",
             task->name, task->state);
 
@@ -308,7 +313,7 @@ int task_suspend(int task_id)
     task_addto_suspend_list(task);
 
     if (resched)
-        task_sched();
+        task_switch();
 
     leave_critical_section(state);
 
@@ -327,7 +332,7 @@ void task_yield(void)
     task= get_cur_task();
     task->state = TASK_READY;
     task_addto_ready_list_tail(task);
-    task_sched();
+    task_switch();
 
     leave_critical_section(state);
 }
@@ -382,7 +387,7 @@ task_t* get_new_task()
 
     KASSERT(!list_is_empty(&task_ready_list[priority]));
 
-    task = list_first_entry(&task_ready_list[priority], struct task, node);
+    task = list_first_entry(&task_ready_list[priority], task_t, node);
     list_delete(&task->node);
     if (list_is_empty(&task_ready_list[priority])) {
         clear_runqueue_bit(priority);
@@ -404,7 +409,7 @@ bool task_can_be_preempted(void)
 }
 
 // should be invoked with interrupt disabled
-void task_sched(void)
+void task_switch(void)
 {
     if (in_nested_interrupt())
         return;
@@ -421,9 +426,7 @@ void task_sched(void)
     if (new == old)
         return;
 
-    set_cur_task(new);
-    g_new_task_stack_ptr = &new->sp;
-    g_cur_task_stack_ptr = &old->sp;
+    g_new_task = new;
     arch_context_switch();
 }
 
@@ -438,7 +441,6 @@ int task_create(task_t *task,
                 unsigned int flags)
 {
     irqstate_t state;
-    int ret = NO_ERR;
 
     if (task == NULL) {
         return -ERR_INVALID_TASK_ENTRY;
@@ -465,8 +467,8 @@ int task_create(task_t *task,
     task->time_remain = time_slice;
     task->flags = flags;
 
-    if (-1 == task_allocate_id(task)) {
-        return -ERR_NO_TASK_ID_AVAILABLE;
+    if (-1 == alloc_task_id(task)) {
+        return -ERR_NO_ENOUGH_TASK_ID;
     }
 
     task_setup_initial_stack(task);
@@ -499,10 +501,9 @@ void task_sched_start(void)
     }
     task = get_new_task();
     task->state = TASK_RUNNING;
-    set_cur_task(task);
+    g_new_task = task;
     leave_critical_section(state);
 
-    g_new_task_stack_ptr = &task->sp;
     arch_start_first_task();
 
     KERR("shouldn't return here\r\n");

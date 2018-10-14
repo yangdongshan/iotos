@@ -33,7 +33,6 @@ typedef struct {
     void *arg;
 } worker_t;
 
-
 int workqueue_init_worker(worker_t *worker, work_t do_work, void *arg, int delay_ms);
 
 int workqueue_queue_worker(worker_t *worker);

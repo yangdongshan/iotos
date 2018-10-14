@@ -1,6 +1,6 @@
 #include <arch_debug.h>
 
-int arch_init(void)
+int platform_init(void)
 {
     arch_debug_init();
 

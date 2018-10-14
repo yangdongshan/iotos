@@ -1,4 +1,5 @@
 #include <kdebug.h>
+#include <time.h>
 
 int task_main(void *arg)
 {
@@ -13,8 +14,6 @@ int task_main(void *arg)
 
 void task_test()
 {
-    int thid[10];
-    int i = 0;
 
     //thid[i] = task_create("task0", 10, task_main, (void*)i, 1024, 5, 0);
     //task_resume(thid[i]);

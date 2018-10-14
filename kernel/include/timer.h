@@ -16,7 +16,7 @@ typedef struct timer {
     timeout_cb timeout_handle;
     void *arg;
     int flag;
-    char *name;
+    const char *name;
 } timer_t;
 
 void timer_init_early(void);
@@ -24,13 +24,13 @@ void timer_init_early(void);
 void timer_tick(void);
 
 timer_t* register_oneshot_timer(timer_t *timer,
-                    char *name,
+                    const char *name,
                     unsigned int delay,
                     timeout_cb handle,
                     void *arg);
 
 timer_t* register_periodical_timer(timer_t *timer,
-                    char *name,
+                    const char *name,
                     unsigned int delay,
                     timeout_cb handle,
                     void *arg);

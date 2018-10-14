@@ -25,7 +25,7 @@ void timer_init_early(void)
 }
 
 static timer_t* register_timer(timer_t *timer,
-                          char *name,
+                          const char *name,
                           unsigned int delay,
                           timeout_cb handle,
                           void *arg,
@@ -77,12 +77,12 @@ static timer_t* register_timer(timer_t *timer,
     return timer;
 }
 
-timer_t*  register_oneshot_timer(timer_t *timer, char *name, unsigned int delay, timeout_cb handle, void *arg)
+timer_t*  register_oneshot_timer(timer_t *timer, const char *name, unsigned int delay, timeout_cb handle, void *arg)
 {
     return register_timer(timer, name, delay, handle, arg, TIMER_ONESHOT);
 }
 
-timer_t* register_periodical_timer(timer_t *timer, char *name, unsigned int delay, timeout_cb handle, void *arg)
+timer_t* register_periodical_timer(timer_t *timer, const char *name, unsigned int delay, timeout_cb handle, void *arg)
 {
     return register_timer(timer, name, delay, handle, arg, TIMER_PERIODICAL);
 }
@@ -152,7 +152,7 @@ void timer_tick(void)
     // FIXME: or high priority task is ready
     if (task_can_be_preempted() || (sched == true)) {
         task_become_ready_tail(task);
-        task_sched();
+        task_switch();
     }
 
     leave_critical_section(state);

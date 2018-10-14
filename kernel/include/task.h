@@ -62,9 +62,10 @@ typedef enum {
 } pend_ret_code_t;
 
 typedef struct task {
+    addr_t sp;
+
     struct list_node node;
 
-    addr_t sp;
     // assume stack grows downside
     void *sp_alloc_addr;
     unsigned int stack_size;
@@ -111,7 +112,7 @@ typedef struct task {
 
     unsigned int exit_code;
 
-    char *name;
+    const char *name;
 } task_t;
 
 
@@ -136,7 +137,7 @@ int task_detach(int thid);
 
 void task_yield();
 
-void task_sched(void);
+void task_switch(void);
 
 task_t *get_cur_task(void);
 
