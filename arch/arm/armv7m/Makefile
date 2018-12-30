@@ -2,10 +2,10 @@
 CFLAGS +=
 
 # add .c files
-CSRC:= port.c
+CSRC:= portc.c
 
 # add .S files
-ASMSRC:=
+ASMSRC:= ports.S
 
 # add sub-directories
 MODULE:=

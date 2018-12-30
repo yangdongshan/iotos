@@ -33,7 +33,6 @@ static int free_holder_cnt;
 
 static sem_holder_t pre_alloc_holder[PRE_ALLOC_HOLDER_CNT];
 
-#ifdef CONFIG_DYNAMIC_ALLOC_HOLDER
 static sem_holder_t* alloc_holder(void)
 {
     int size;
@@ -49,7 +48,6 @@ static sem_holder_t* alloc_holder(void)
 
     return holder;
 }
-#endif
 
 static sem_holder_t* get_holder(void)
 {
@@ -325,7 +323,6 @@ int sem_post(sem_t *sem)
                 cancel_timer(sem->timer);
                 sem->timer = NULL;
             }
-
 
             task_become_ready_tail(cur);
             task_switch();

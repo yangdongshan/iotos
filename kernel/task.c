@@ -225,6 +225,13 @@ static int start_entry(void *arg)
     return ret;
 }
 
+static void task_grave(void)
+{
+    task_t *cur = get_cur_task();
+    
+    KASSERT(0);
+}
+
 static void task_setup_initial_stack(task_t *task)
 {
     struct context_frame *cf;
@@ -238,9 +245,10 @@ static void task_setup_initial_stack(task_t *task)
     cf = (struct context_frame*)stack_top;
     cf--;
 
-    arch_init_context_frame(cf, (addr_t*)task->start_entry, task->start_arg);
+    arch_init_context_frame(cf, (addr_t*)task->start_entry,
+                            task->start_arg, task_grave);
 
-    task->sp = (addr_t)cf;
+    task->stack = (addr_t)cf;
 }
 
 
@@ -425,6 +433,7 @@ void task_switch(void)
     if (new == old)
         return;
 
+    new->time_remain = new->time_slice;
     g_new_task = new;
     arch_context_switch();
 }

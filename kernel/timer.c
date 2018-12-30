@@ -115,7 +115,6 @@ void timer_tick(void)
 {
     irqstate_t state;
     tick_t cur_tick;
-    bool sched = false;
 
     cur_tick = get_sys_tick();
     state = enter_critical_section();
@@ -142,19 +141,10 @@ void timer_tick(void)
     }
 
     task_t *task = get_cur_task();
-    if (task->time_remain > 0) {
-        if (--task->time_remain == 0) {
-            task->time_remain = task->time_slice;
-            sched = true;
-        }
-    }
-
-    // FIXME: or high priority task is ready
-    if (task_can_be_preempted() || (sched == true)) {
-        task_become_ready_tail(task);
-        task_switch();
+    if (--task->time_remain == 0) {
+        TASK_RESCHED_SET(task);
     }
 
     leave_critical_section(state);
-
 }
+

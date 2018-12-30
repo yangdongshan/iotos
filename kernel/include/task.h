@@ -41,6 +41,10 @@
 #define AUTO_RUN   0x01ul
 #define TASK_IS_AUTO_RUN(f) (f & 0x01)
 
+#define TF_RESCHED      (1ul << 31)
+#define TASK_RESCHED_SET(t) (t->flags |= TF_RESCHED)
+#define TASK_RESCHED_CLR(t) (t->flags &= (~TF_RESCHED))
+#define TASK_NEED_RESCHED(t) (t->flags & TF_RESCHED)
 
 typedef int (*task_start_t)(void *arg);
 
@@ -62,7 +66,7 @@ typedef enum {
 } pend_ret_code_t;
 
 typedef struct task {
-    addr_t sp;
+    addr_t stack;
 
     struct list_node node;
 

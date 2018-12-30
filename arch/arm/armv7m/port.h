@@ -22,11 +22,6 @@ struct context_frame {
     uint32_t xpsr;
 };
 
-
-void arch_init_context_frame(struct context_frame *cf, addr_t * ip, void *arg);
-
-
-
 static inline void irq_enable()
 {
     __asm__ __volatile__ ("cpsie i\n");
@@ -69,6 +64,8 @@ void arch_start_first_task(void);
 
 void arch_context_switch(void);
 
-void arch_init_context_frame(struct context_frame *cf, addr_t *entry, void *arg);
+void arch_init_context_frame(struct context_frame *cf,
+                             addr_t * ip, void *arg,
+                             addr_t *task_grave);
 
 #endif // PORT_H
