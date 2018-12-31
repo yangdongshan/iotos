@@ -2,16 +2,13 @@
 #include <err.h>
 #include <irq.h>
 #include <task.h>
+#include <sched.h>
 #include <kdebug.h>
 
 
 #define to_task_ptr(node) container_of(node, struct list_node, node)
 
 #define BITS_U32_CNT(bits) ((bits + 31)/32)
-
-static task_t *task_id_table[MAX_TASK_CNT];
-
-static int idle_task_id = -1;
 
 static struct list_node global_task_list;
 static struct list_node task_ready_list[LOWEST_TASK_PRIORITY + 1];
@@ -62,6 +59,26 @@ void set_runqueue_bit(int priority)
     runqueue_bitmap[word] |= (1 << bit);
 }
 
+void task_list_add_priority(struct list_node *head, task_t *task)
+{
+    task_t *iter;
+
+    if (list_is_empty(head)){
+        list_add_head(head, &task->node);
+        return;
+    }
+
+    list_foreach_entry(head, iter, task_t, node) {
+        if (iter->priority < task->priority) {
+            list_add_before(&iter->node, &task->node);
+            return;
+        }
+    }
+
+    list_add_tail(head, &task->node);
+}
+
+
 static void clear_runqueue_bit(int priority)
 {
     KASSERT((priority >= 0) && (priority <= LOWEST_TASK_PRIORITY));
@@ -72,95 +89,7 @@ static void clear_runqueue_bit(int priority)
     runqueue_bitmap[word] &= ~(1 << bit);
 }
 
-void set_idle_task_id(int id)
-{
-    idle_task_id = id;
-}
 
-int get_idle_task_id(void)
-{
-    return idle_task_id;
-}
-
-static inline task_t* idle_task(void)
-{
-    return task_id_table[idle_task_id];
-}
-
-static inline task_t* get_task_by_id(int task_id)
-{
-    if (task_id < 0 || task_id > MAX_TASK_ID)
-        return NULL;
-
-    return task_id_table[task_id];
-}
-
-static int alloc_task_id(task_t *task)
-{
-    irqstate_t state;
-    int i;
-    int id = -1;
-
-    state = enter_critical_section();
-
-    for (i = 0; i < MAX_TASK_CNT; i++) {
-        if (task_id_table[i] == NULL) {
-            id = i;
-            task_id_table[id] = task;
-            task->task_id = id;
-            break;
-        }
-    }
-
-    leave_critical_section(state);
-    return id;
-}
-
-static inline bool task_id_valid(int th_id)
-{
-    if (th_id >= 0 && th_id <= MAX_TASK_ID)
-        return true;
-    else
-        return false;
-}
-
-static inline bool task_is_valid(int task_id)
-{
-    if (((task_id >= 0) && (task_id <= MAX_TASK_ID))
-        || task_id == IDLE_TASK_ID) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-static inline void _task_set_name(task_t *task, const char *name)
-{
-    task->name = name;
-}
-
-static void task_set_name(task_t *task, const char *name)
-{
-    irqstate_t state;
-
-    state = enter_critical_section();
-    _task_set_name(task, name);
-    leave_critical_section(state);
-}
-
-static inline void _task_set_priority(task_t *task, int priority)
-{
-    task->priority = priority;
-}
-
-static void task_set_priority(task_t *task, int priority)
-{
-    irqstate_t state;
-
-    state = enter_critical_section();
-    _task_set_priority(task, priority);
-    leave_critical_section(state);
-}
 
 static void task_addto_ready_list_head(task_t *task)
 {
@@ -197,11 +126,56 @@ static inline void set_cur_task(task_t *task)
 }
 */
 
+void task_set_priority(task_t *task, int priority)
+{
+    switch (task->state) {
+        case TASK_READY:
+            list_delete(&task->node);
+            clear_runqueue_bit(task->origin_priority);
+            task->priority = priority;
+            task_addto_ready_list_tail(task);
+            break;
+        case TASK_PENDING:
+            task->priority = priority;
+            if (task->pending_list) {
+                list_delete(&task->node);
+                task_list_add_priority(task->pending_list, task);
+            }
+            break;
+
+        default:
+            task->priority = priority;
+            break;
+    }
+
+}
+
+void task_restore_priority(task_t *task)
+{
+    switch (task->state) {
+        case TASK_READY:
+            list_delete(&task->node);
+            clear_runqueue_bit(task->priority);
+            task->priority = task->origin_priority;
+            task_addto_ready_list_tail(task);
+            break;
+        case TASK_PENDING:
+            task->priority = task->origin_priority;
+            if (task->pending_list) {
+                list_delete(&task->node);
+                task_list_add_priority(task->pending_list, task);
+            }
+            break;
+
+        default:
+            task->priority = task->origin_priority;
+            break;
+    }
+}
 void task_init_early(void)
 {
     unsigned int i;
 
-    memset(task_id_table, 0, sizeof(task_id_table));
     memset(runqueue_bitmap, 0, sizeof(runqueue_bitmap));
 
     for (i = 0; i <= LOWEST_TASK_PRIORITY; i++) {
@@ -215,7 +189,7 @@ void task_init_early(void)
 
 static int start_entry(void *arg)
 {
-    int ret = NO_ERR;
+    int ret = ERR_OK;
     task_t *task = (task_t*)arg;
 
     if (task->main_entry) {
@@ -228,7 +202,7 @@ static int start_entry(void *arg)
 static void task_grave(void)
 {
     task_t *cur = get_cur_task();
-    
+
     KASSERT(0);
 }
 
@@ -246,7 +220,7 @@ static void task_setup_initial_stack(task_t *task)
     cf--;
 
     arch_init_context_frame(cf, (addr_t*)task->start_entry,
-                            task->start_arg, task_grave);
+                            task->start_arg, (addr_t*)task_grave);
 
     task->stack = (addr_t)cf;
 }
@@ -298,18 +272,43 @@ void task_become_ready_tail(task_t *task)
     task_addto_ready_list_tail(task);
 }
 
-int task_suspend(int task_id)
+int task_wakeup(task_t *task)
+{
+    irqstate_t state;
+
+    KASSERT(task != NULL);
+
+    state = enter_critical_section();
+
+    KASSERT(task->state != TASK_SLEEPING);
+
+    kdebug_print("%s: task state %d\r\n", __func__, task->state);
+    switch (task->state) {
+        case TASK_SLEEPING:
+            cancel_timer(&task->wait_timer);
+            break;
+        case TASK_PENDING:
+            break;
+        default:
+            goto out;
+    }
+
+    task->pend_ret_code = PEND_WAKEUP;
+    list_delete(&task->node);
+    task->state = TASK_READY;
+    task_addto_ready_list_head(task);
+    task_switch();
+
+out:
+    leave_critical_section(state);
+
+    return ERR_OK;
+}
+
+int task_suspend(task_t *task)
 {
     irqstate_t state;
     bool resched = false;
-
-    if (task_id_valid(task_id))
-        return -ERR_INVALID_TASK_ID;
-
-    if (task_id == idle_task_id)
-        return -ERR_SUSPEDN_IDLE_TASK;
-
-    task_t *task = get_task_by_id(task_id);
 
     state = enter_critical_section();
 
@@ -325,7 +324,7 @@ int task_suspend(int task_id)
     leave_critical_section(state);
 
 
-    return NO_ERR;
+    return ERR_OK;
 }
 
 
@@ -350,7 +349,7 @@ int task_resume(task_t *task)
     bool resched = false;
 
     if (task == NULL)
-        return NO_ERR;
+        return ERR_OK;
 
     state = enter_critical_section();
 
@@ -367,17 +366,17 @@ int task_resume(task_t *task)
         task_yield();
     }
 
-    return NO_ERR;
+    return ERR_OK;
 }
 
 int task_exit(int task_id)
 {
-    return NO_ERR;
+    return ERR_OK;
 }
 
 int task_join(int task_id)
 {
-    return NO_ERR;
+    return ERR_OK;
 }
 
 
@@ -463,6 +462,7 @@ int task_create(task_t *task,
 
     task->name = name;
     task->priority = priority;
+    task->origin_priority = priority;
     task->start_entry = start_entry;
     task->start_arg = task;
     task->main_entry = main_entry;
@@ -474,10 +474,6 @@ int task_create(task_t *task,
     task->time_slice = time_slice;
     task->time_remain = time_slice;
     task->flags = flags;
-
-    if (-1 == alloc_task_id(task)) {
-        return -ERR_NO_ENOUGH_TASK_ID;
-    }
 
     task_setup_initial_stack(task);
 
@@ -491,30 +487,6 @@ int task_create(task_t *task,
 
     leave_critical_section(state);
 
-    return NO_ERR;
-}
-
-
-void task_sched_start(void)
-{
-    task_t *task, *temp;
-    irqstate_t state;
-
-    state = enter_critical_section();
-
-    list_foreach_entry_safe(&task_suspend_list, task, temp, struct task, node) {
-            list_delete(&task->node);
-            task->state = TASK_READY;
-            task_addto_ready_list_tail(task);
-    }
-    task = get_new_task();
-    task->state = TASK_RUNNING;
-    g_new_task = task;
-    leave_critical_section(state);
-
-    arch_start_first_task();
-
-    KERR("shouldn't return here\r\n");
-    KASSERT(0);
+    return ERR_OK;
 }
 

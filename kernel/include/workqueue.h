@@ -27,19 +27,23 @@ typedef struct {
     tick_t queue_tick;
     // do the work after ticks
     tick_t delay;
+    // the time when the work is timeout
+    tick_t timeout;
     // work function
     work_t do_work;
     // work arg
     void *arg;
 } worker_t;
 
-int workqueue_init_worker(worker_t *worker, work_t do_work, void *arg, int delay_ms);
+int workqueue_init_worker(worker_t *worker, work_t do_work, void *arg, tick_t delay_ticks);
 
 int workqueue_queue_worker(worker_t *worker);
 
 int workqueue_cancel_worker(worker_t *worker);
 
 int wq_process(void *arg);
+
+void create_workqueue_task(void);
 
 void workqueue_init_early(void);
 

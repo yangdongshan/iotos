@@ -38,7 +38,7 @@
 #endif
 
 
-#define AUTO_RUN   0x01ul
+#define TASK_AUTO_RUN   0x01ul
 #define TASK_IS_AUTO_RUN(f) (f & 0x01)
 
 #define TF_RESCHED      (1ul << 31)
@@ -50,20 +50,17 @@ typedef int (*task_start_t)(void *arg);
 
 typedef int (*task_main_t)(void *arg);
 
-typedef enum {
-    TASK_SUSPENDED = 0,
-    TASK_READY,
-    TASK_RUNNING,
-    TASK_PENDING,
-    TASK_SLEEPING,
-    TASK_DEAD,
-} task_state_e;
+#define TASK_SUSPENDED      (0x00UL)
+#define TASK_READY          (0x01UL)
+#define TASK_RUNNING        (0x02UL)
+#define TASK_PENDING        (0x03UL)
+#define TASK_SLEEPING       (0x04UL)
+#define TASK_DEAD           (0x05UL)
 
-typedef enum {
-    PEND_NONE = 0,
-    PEND_TIMEOUT,
-    PEND_WAKEUP,
-} pend_ret_code_t;
+
+#define    PEND_NONE        (0x00UL)
+#define    PEND_TIMEOUT     (0x01UL)
+#define    PEND_WAKEUP      (0x02UL)
 
 typedef struct task {
     addr_t stack;
@@ -76,6 +73,9 @@ typedef struct task {
 
     // priority of the task
     unsigned int priority;
+
+    // original priority
+    unsigned int origin_priority;
 
     // task sched policy
     unsigned int sched_policy;
@@ -98,10 +98,7 @@ typedef struct task {
     unsigned long switch_count;
 #endif
 
-    // task id
-    int task_id;
-
-    task_state_e state;
+    unsigned int state;
 
     // misc flags
     unsigned int flags;
@@ -121,9 +118,21 @@ typedef struct task {
 
 
 
+extern task_t *g_cur_task;
+extern task_t *g_new_task;
+
 void task_init_early(void);
 
-void task_sched_start(void);
+
+static inline void task_set_state(task_t *task, unsigned int state)
+{
+    task->state = state;
+}
+
+static inline unsigned int task_get_state(task_t *task)
+{
+    return task->state;
+}
 
 int task_create(task_t *task,
                 const char* name,
@@ -145,12 +154,18 @@ void task_switch(void);
 
 task_t *get_cur_task(void);
 
+int task_wakeup(task_t *task);
+
 void task_become_ready_head(task_t *task);
 
 void task_become_ready_tail(task_t *task);
 
 bool task_can_be_preempted(void);
 
-void set_idle_task_id(int id);
+void task_set_priority(task_t *task, int priority);
+
+void task_restore_priority(task_t *task);
+
+void task_list_add_priority(struct list_node *head, task_t *task);
 
 #endif

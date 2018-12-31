@@ -23,17 +23,11 @@ static int idle_main(void *arg)
 
 void create_idle_task(void)
 {
-   int id = task_create(&idle_task,
-                        "idle",
-                        LOWEST_TASK_PRIORITY,
-                        idle_main,
-                        NULL,
-                        idle_task_stack,
-                        IDLE_TASK_STACK_SIZE,
-                        5, 0);
-
-   if (id != -1) {
-        set_idle_task_id(id);
-   }
+   task_create(&idle_task, "idle",
+               LOWEST_TASK_PRIORITY,
+               idle_main, NULL,
+               idle_task_stack,
+               IDLE_TASK_STACK_SIZE,
+               0, TASK_AUTO_RUN);
 }
 

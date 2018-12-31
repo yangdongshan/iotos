@@ -1,69 +1,31 @@
 #include <task.h>
+#include <sched.h>
 #include <timer.h>
 #include <mm.h>
 #include <sem.h>
 #include <workqueue.h>
 #include <idle.h>
 
-/** idle task config
- */
-#ifdef CONFIG_IDLE_TASK_STACK_SIZE
-#define IDLE_TASK_STACK_SIZE CONFIG_IDLE_TASK_STACK_SIZE
-#else
-#define IDLE_TASK_STACK_SIZE  1024
-#endif
-
-/** work queue config
- */
-
-#ifdef CONFIG_WORKQUEU_TASK_STACK_SIZE
-#define WQ_TASK_STACK_SIZE CONFIG_WORKQUEU_TASK_STACK_SIZE
-#else
-#define WQ_TASK_STACK_SIZE 1024
-#endif
-
-#ifdef CONFIG_WORKQUEUE_TASK_PRIORITY
-#define WQ_TASK_PRIORITY
-#else
-#define WQ_TASK_PRIORITY 20
-#endif
-
-#define WQ_TAKS_NAME "workqueue"
-
-task_t wq_task;
-static unsigned char wq_task_stack[WQ_TASK_STACK_SIZE];
-
-static void create_workqueue_task(void)
-{
-    task_create(&wq_task,
-                WQ_TAKS_NAME,
-                WQ_TASK_PRIORITY,
-                wq_process,
-                NULL,
-                wq_task_stack,
-                WQ_TASK_STACK_SIZE,
-                5,
-                0);
-}
-
 void os_init(void)
 {
+    os_set_state(OS_INIT);
+
     mm_init_early();
 
     timer_init_early();
 
     task_init_early();
 
-    sem_init_early();
-
     workqueue_init_early();
 
     create_idle_task();
 
     create_workqueue_task();
+
+    os_set_state(OS_READY);
 }
 
 void os_run(void)
 {
-    task_sched_start();
+    os_start_sched();
 }

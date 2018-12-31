@@ -8,23 +8,19 @@ extern "C" {
 #include <list.h>
 #include <timer.h>
 
+#define SEM_MAGIC   (0x2de89acf)
 
 #define     SEM_OK             (0)
 #define     SEM_TIMEOUT        (1)
 #define     SEM_AGAIN          (2)
-#define     SEM_HOLDER_ERR     (3)
 
 typedef struct sem {
+    int magic;
     int cnt;
     list_head_t wait_list;
-    int wait_cnt;
-    list_head_t holder_list;
-    int holder_cnt;
-    timer_t *timer;
 } sem_t;
 
 
-void sem_init_early(void);
 
 int sem_init(sem_t *sem, int val);
 

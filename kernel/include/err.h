@@ -2,7 +2,7 @@
 #define __ERRNO_H
 
 typedef enum {
-    NO_ERR = 0,
+    ERR_OK = 0,
 
     ERR_INVALID_TASK_ID,
     ERR_INVALID_TASK_ENTRY,
@@ -15,7 +15,7 @@ typedef enum {
     ERR_INVALID_ARG,
     ERR_NO_MEM,
 
-    ERR_IN_INTERRUPT,
+    ERR_INT_NESTED,
 } errno_t;
 
 #endif // __ERRNO_H

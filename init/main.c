@@ -6,6 +6,7 @@
 #include <timer.h>
 #include <time.h>
 #include <sem.h>
+#include <mutex.h>
 #include <ringbuf.h>
 #include <workqueue.h>
 #include <platform.h>
@@ -53,7 +54,6 @@ static void do_work1(void *arg)
     worker_t *worker = (worker_t*)arg;
 
     kdebug_print("workqueue1 work cnt %d\r\n", cnt++);
-    msleep(1000);
     workqueue_queue_worker(worker);
 }
 
@@ -61,10 +61,15 @@ static void do_work2(void *arg)
 {
     static int cnt = 0;
     worker_t *worker = (worker_t*)arg;
+    mutex_t mutex;
+
+    mutex_init(&mutex);
+    mutex_wait(&mutex);
 
     kdebug_print("workqueue2 work cnt %d\r\n", cnt++);
-    msleep(1010);
     workqueue_queue_worker(worker);
+
+    mutex_post(&mutex);
 }
 
 
@@ -72,8 +77,8 @@ static  worker_t worker1, worker2;
 static int test_task1_run(void *arg)
 {
     int cnt = 0;
-    workqueue_init_worker(&worker1, do_work1, &worker1, 1000);
-    workqueue_init_worker(&worker2, do_work2, &worker2, 1010);
+    workqueue_init_worker(&worker1, do_work1, &worker1, 200);
+    workqueue_init_worker(&worker2, do_work2, &worker2, 210);
     workqueue_queue_worker(&worker1);
     workqueue_queue_worker(&worker2);
 
@@ -84,6 +89,15 @@ static int test_task1_run(void *arg)
         ringbuf_queue(ringbuf, data);
         kdebug_print("ringbuf queue %c\r\n", data);
         sem_post(&sem1);
+
+        if (cnt == 10) {
+            workqueue_cancel_worker(&worker1);
+        }
+
+        if (cnt == 15) {
+            workqueue_queue_worker(&worker1);
+        }
+
 
         cnt++;
     }
@@ -102,8 +116,8 @@ static int sys_init_run(void *arg)
 
     systick_start();
 
-    register_periodical_timer(&timer1, "timer1", 5000, my_timer1, NULL);
-    register_oneshot_timer(&timer2, "timer2",10000, my_timer2, NULL);
+    register_periodical_timer(&timer1, "timer1", 500, my_timer1, NULL);
+    register_oneshot_timer(&timer2, "timer2",1000, my_timer2, NULL);
 
     sem_init(&sem1, 0);
 
@@ -149,7 +163,7 @@ int os_start()
                 sys_init_stack,
                 SYS_INIT_STACK_SIZE,
                 5,
-                0);
+                TASK_AUTO_RUN);
 
     os_run();
 

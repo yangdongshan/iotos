@@ -11,8 +11,8 @@ typedef int (*timeout_cb)(void *arg);
 
 typedef struct timer {
     struct list_node node;
-    unsigned int timeout;
-    unsigned int cycle;
+    unsigned long timeout;
+    unsigned long cycle;
     timeout_cb timeout_handle;
     void *arg;
     int flag;
@@ -23,17 +23,17 @@ void timer_init_early(void);
 
 void timer_tick(void);
 
-timer_t* register_oneshot_timer(timer_t *timer,
-                    const char *name,
-                    unsigned int delay,
-                    timeout_cb handle,
-                    void *arg);
+int register_oneshot_timer(timer_t *timer,
+                           const char *name,
+                           unsigned long delay_ticks,
+                           timeout_cb handle,
+                           void *arg);
 
-timer_t* register_periodical_timer(timer_t *timer,
-                    const char *name,
-                    unsigned int delay,
-                    timeout_cb handle,
-                    void *arg);
+int register_periodical_timer(timer_t *timer,
+                              const char *name,
+                              unsigned long delay_ticks,
+                              timeout_cb handle,
+                              void *arg);
 
 int cancel_timer(timer_t *timer);
 
