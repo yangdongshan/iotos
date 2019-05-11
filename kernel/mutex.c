@@ -1,6 +1,7 @@
 #include <task.h>
 #include <mutex.h>
 #include <irq.h>
+#include <string.h>
 #include <kdebug.h>
 
 int mutex_init(mutex_t *mutex)

@@ -41,8 +41,9 @@ CFLAGS := -Wall \
           -mfpu=fpv4-sp-d16 \
           -Wdouble-promotion \
           -finline \
-          -MT -MP -MD
-          #-ffreestanding \
+          -ffreestanding \
+          -MT -MP -MD \
+		  -fno-builtin
 
 ifeq ($(CONFIG_COMPILE_OPTIMISE_LEVEL),0)
 	CFLAGS += -O0
@@ -59,6 +60,7 @@ endif
 ARFLAGS := rcs
 
 LDFLAGS := -nostartfiles \
+	       -nodefaultlibs
 
 LINKER_FILE := $(ROOTDIR)/board/$(BOARD)/src/stm32_flash.ld
 

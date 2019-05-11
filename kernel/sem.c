@@ -11,7 +11,6 @@
 int sem_init(sem_t *sem, int val)
 {
     int ret = SEM_OK;
-    irqstate_t state;
 
     KASSERT(sem != NULL);
 
@@ -109,14 +108,11 @@ int sem_trywait(sem_t *sem)
 {
     int ret = SEM_OK;
     irqstate_t state;
-    task_t *cur;
 
     KASSERT(sem != NULL);
     KASSERT(sem->magic == SEM_MAGIC);
 
     state = enter_critical_section();
-
-    cur = get_cur_task();
 
     if (sem->cnt <= 0) {
         ret = SEM_AGAIN;

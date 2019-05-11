@@ -88,7 +88,6 @@ static inline struct list_node* list_remove_tail(struct list_node *head)
     }
 }
 
-
 static inline struct list_node* list_peek_head(struct list_node *head)
 {
     if (head->next != head) {

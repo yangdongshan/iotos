@@ -8,7 +8,7 @@
 
 #define to_task_ptr(node) container_of(node, struct list_node, node)
 
-#define BITS_U32_CNT(bits) ((bits + 31)/32)
+#define BITS_TO_WORD(bits) ((bits + 31)/32)
 
 static struct list_node global_task_list;
 static struct list_node task_ready_list[LOWEST_TASK_PRIORITY + 1];
@@ -20,7 +20,7 @@ task_t *g_cur_task = NULL;
 task_t *g_new_task = NULL;
 
 // FIXME assume max task priority is not more than 32
-#define RUNQUEUE_WORD BITS_U32_CNT(LOWEST_TASK_PRIORITY + 1)
+#define RUNQUEUE_WORD BITS_TO_WORD(LOWEST_TASK_PRIORITY + 1)
 static uint32_t runqueue_bitmap[RUNQUEUE_WORD];
 
 static int get_prefer_task_priority(void)
@@ -59,6 +59,16 @@ void set_runqueue_bit(int priority)
     runqueue_bitmap[word] |= (1 << bit);
 }
 
+static void clear_runqueue_bit(int priority)
+{
+    KASSERT((priority >= 0) && (priority <= LOWEST_TASK_PRIORITY));
+
+    uint8_t word = priority / 32;
+    uint8_t bit = priority % 32;
+
+    runqueue_bitmap[word] &= ~(1 << bit);
+}
+
 void task_list_add_priority(struct list_node *head, task_t *task)
 {
     task_t *iter;
@@ -77,19 +87,6 @@ void task_list_add_priority(struct list_node *head, task_t *task)
 
     list_add_tail(head, &task->node);
 }
-
-
-static void clear_runqueue_bit(int priority)
-{
-    KASSERT((priority >= 0) && (priority <= LOWEST_TASK_PRIORITY));
-
-    uint8_t word = priority / 32;
-    uint8_t bit = priority % 32;
-
-    runqueue_bitmap[word] &= ~(1 << bit);
-}
-
-
 
 static void task_addto_ready_list_head(task_t *task)
 {
@@ -115,6 +112,7 @@ task_t *get_cur_task(void)
 {
     return g_cur_task;
 }
+
 /*
 static inline void set_cur_task(task_t *task)
 {
@@ -380,7 +378,7 @@ int task_join(int task_id)
 }
 
 
-task_t* get_new_task()
+task_t* get_new_task(void)
 {
     task_t *task;
 
