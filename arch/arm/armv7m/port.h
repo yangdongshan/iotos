@@ -1,5 +1,5 @@
-#ifndef PORT_H
-#define PORT_H
+#ifndef __PORT_H
+#define __PORT_H
 
 #include <typedef.h>
 
@@ -24,24 +24,21 @@ struct context_frame {
 
 static inline void irq_enable()
 {
-    __asm__ __volatile__ ("cpsie i\n");
+    __asm__ __volatile__ ("cpsie i:::memory\n");
 }
 
 static inline void irq_disable()
 {
-    __asm__ __volatile__ ("cpsid i\n");
+   // __asm__ __volatile__ ("cpsid i:::memory\n");
 }
 
-static inline irqstate_t irq_disable_state_save(void)
+static inline irqstate_t irq_state_save(void)
 {
     irqstate_t state;
 
     __asm__ __volatile__ (
             "mrs %0, primask\n"
-            "cpsid i\n"
             : "=r" (state)
-            :
-            : "memory"
             );
 
     return state;
@@ -53,12 +50,29 @@ static inline void irq_state_restore(irqstate_t state)
             "tst %0, #1\n"
             "bne.n 1f\n"
             "cpsie i\n"
+            "nop\n"
             "1:\n"
             :
             : "r" (state)
             : "memory"
             );
 }
+
+static inline irqstate_t arch_enter_critical_section(void)
+{
+	irqstate_t state;
+
+	state = irq_state_save();
+	irq_disable();
+
+    return state;
+}
+
+static inline void arch_leave_critical_section(irqstate_t state)
+{
+    irq_state_restore(state);
+}
+
 
 void arch_start_first_task(void);
 
@@ -68,4 +82,5 @@ void arch_init_context_frame(struct context_frame *cf,
                              addr_t * ip, void *arg,
                              addr_t *task_grave);
 
-#endif // PORT_H
+#endif // __PORT_H
+

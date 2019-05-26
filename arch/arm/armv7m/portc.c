@@ -2,11 +2,6 @@
 #include <port.h>
 #include <typedef.h>
 
-void no_ret_func(void)
-{
-
-}
-
 /** init thread initial stack
  *  it looks like the stack keeps registers when it was switched out.
  *

@@ -39,7 +39,7 @@ int sem_wait(sem_t *sem)
 
     if (sem->cnt < 0) {
         cur->state = TASK_PENDING;
-        cur->pend_ret_code = PEND_NONE;
+        cur->pend_ret_code = TASK_PEND_NONE;
         cur->pending_list = &sem->wait_list;
         task_list_add_priority(&sem->wait_list, cur);
         task_switch();
@@ -56,10 +56,10 @@ static int sem_wait_timeout_cb(void *arg)
     task_t *task = (task_t*)arg;
 
     list_delete(&task->node);
-    task_become_ready_head(task);
+    task_become_ready(task);
     KINFO("task %s sem wait timeout\r\n",
             task->name);
-    task->pend_ret_code = PEND_TIMEOUT;
+    task->pend_ret_code = TASK_PEND_TIMEOUT;
 
     return 0;
 }
@@ -84,7 +84,7 @@ int sem_timedwait(sem_t *sem, int ms)
 
     if (sem->cnt < 0) {
         cur->state = TASK_PENDING;
-        cur->pend_ret_code = PEND_NONE;
+        cur->pend_ret_code = TASK_PEND_NONE;
         cur->pending_list = &sem->wait_list;
         task_list_add_priority(&sem->wait_list, cur);
         register_oneshot_timer(&cur->wait_timer, "sem", ms,
@@ -93,7 +93,7 @@ int sem_timedwait(sem_t *sem, int ms)
         task_switch();
         cur->pending_list = NULL;
 
-        if (cur->pend_ret_code == PEND_TIMEOUT) {
+        if (cur->pend_ret_code == TASK_PEND_TIMEOUT) {
             sem->cnt++;
             ret = SEM_TIMEOUT;
         }
@@ -149,8 +149,8 @@ int sem_post(sem_t *sem)
         if (!list_is_empty(&sem->wait_list)) {
             wakeup = list_first_entry(&sem->wait_list, task_t, node);
             list_delete(&wakeup->node);
-            task_become_ready_head(wakeup);
-            task_become_ready_tail(cur);
+            task_become_ready(wakeup);
+            task_become_ready(cur);
             task_switch();
         }
     }

@@ -5,12 +5,7 @@ CFLAGS +=
 CSRC:= irq.c \
 	   sched.c \
 	   task.c \
-	   timer.c \
-	   time.c \
-	   mutex.c \
-	   sem.c \
-	   signal.c \
-	   workqueue.c \
+	   tick.c \
 	   idle.c \
 	   init.c \
 

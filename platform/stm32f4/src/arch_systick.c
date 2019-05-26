@@ -1,5 +1,5 @@
 #include <irq.h>
-#include <timer.h>
+#include <tick.h>
 #include <time.h>
 
 #include "stm32f4xx_rcc.h"
@@ -14,8 +14,8 @@ void systick_start(void)
 
 void SysTick_Handler(void)
 {
-    enter_interrupt();
-    sys_time_tick();
-    timer_tick();
-    leave_interrupt();
+    interrupt_enter();
+    sys_tick_inc();
+    tick_update();
+    interrupt_leave();
 }

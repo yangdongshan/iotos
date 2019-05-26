@@ -3,7 +3,7 @@
 
 #include <port.h>
 #include <list.h>
-#include <timer.h>
+#include <tick.h>
 
 #ifndef CONFIG_MAX_TASK_NAME_LEN
 #define MAX_TASK_NAME_LEN (32)
@@ -38,29 +38,48 @@
 #endif
 
 
-#define TASK_AUTO_RUN   0x01ul
-#define TASK_IS_AUTO_RUN(f) (f & 0x01)
+#define TF_IDLE_TASK  0x01u
+#define TF_AUTO_RUN   0x02u
+
 
 #define TF_RESCHED      (1ul << 31)
 #define TASK_RESCHED_SET(t) (t->flags |= TF_RESCHED)
 #define TASK_RESCHED_CLR(t) (t->flags &= (~TF_RESCHED))
 #define TASK_NEED_RESCHED(t) (t->flags & TF_RESCHED)
 
-typedef int (*task_start_t)(void *arg);
+typedef int (*task_entry_t)(void *arg);
 
-typedef int (*task_main_t)(void *arg);
+#define TS_INIT           				(0x00UL)	
 
-#define TASK_SUSPENDED      (0x00UL)
-#define TASK_READY          (0x01UL)
-#define TASK_RUNNING        (0x02UL)
-#define TASK_PENDING        (0x03UL)
-#define TASK_SLEEPING       (0x04UL)
-#define TASK_DEAD           (0x05UL)
+#define TS_READY          				(0x01UL)
+
+#define TS_RUNNING        				(0x02UL)
+
+#define TS_SUSPENDED      				(0x03UL)
+
+#define TS_PEND_MUTEX     			    (0x04UL)
+#define TS_PEND_MUTEX_SUSPEND			(0x05UL)
+#define TS_PEND_MUTEX_TICK				(0x06UL)
+#define TS_PEND_MUTEX_TICK_SUSPEND		(0x07UL)
+
+#define TS_PEND_SEM						(0x08UL)
+#define TS_PEND_SEM_SUSPEND				(0x09UL)
+#define TS_PEND_SEM_TICK				(0x0AUL)
+#define TS_PEND_SEM_TICK_SUSPEND		(0x0BUL)
+
+// TODO: pend queue, event
+
+#define TS_PEND_SLEEP          			(0x14UL)
+#define TS_PEND_SLEEP_SUSPEND  			(0x15UL)
+
+#define TASK_DEAD           			(0x16UL)
 
 
-#define    PEND_NONE        (0x00UL)
-#define    PEND_TIMEOUT     (0x01UL)
-#define    PEND_WAKEUP      (0x02UL)
+#define PEND_OK          (0x00UL)
+#define PEND_TIMEOUT     (0x01UL)
+#define PEND_WAKEUP      (0x02UL)
+#define PEND_INT         (0x03UL)
+#define PEND_CANCEL      (0x04UL)
 
 typedef struct task {
     addr_t stack;
@@ -68,29 +87,29 @@ typedef struct task {
     struct list_node node;
 
     // assume stack grows downside
-    void *sp_alloc_addr;
-    unsigned int stack_size;
+    addr_t sp_alloc_addr;
+    unsigned long stack_size;
 
     // priority of the task
-    unsigned int priority;
+    int prio;
 
     // original priority
-    unsigned int origin_priority;
+    int origin_prio;
 
     // task sched policy
     unsigned int sched_policy;
 
     // time slice assigned to the task
-    tick_t time_slice;
+    unsigned int time_slice;
     // remain time for the task
-    tick_t time_remain;
+    unsigned int time_remain;
 
     // task entry point
-    task_start_t start_entry;
+    task_entry_t start_entry;
     void *start_arg;
 
     // task main point
-    task_main_t main_entry;
+    task_entry_t main_entry;
     void *main_arg;
 
 #ifdef CONFIG_TASK_STAT
@@ -98,15 +117,19 @@ typedef struct task {
     unsigned long switch_count;
 #endif
 
-    unsigned int state;
+    unsigned long state;
 
     // misc flags
-    unsigned int flags;
+    unsigned long flags;
 
-    timer_t wait_timer;
-    // point to the list head where the task node is pennding
-    list_head_t *pending_list;
+    // point to the list head where the task node is pending on
+    list_head_t *pend_list;
 
+	// when the task is blocked
+	tick_t pend_time;
+	// how many ticks the task will block
+	tick_t pend_timeout;
+	
     int pend_ret_code;
 
     list_head_t wait_task_list;
@@ -134,15 +157,18 @@ static inline unsigned int task_get_state(task_t *task)
     return task->state;
 }
 
+int task_sleep(tick_t ticks);
+
 int task_create(task_t *task,
                 const char* name,
-                unsigned int priority,
-                task_main_t main_entry,
+                int prio,
+                task_entry_t entry,
                 void *arg,
                 void *stack,
                 size_t stack_size,
-                tick_t time_slice,
+                unsigned int time_slice,
                 unsigned int flags);
+
 
 int task_resume(task_t *task);
 
@@ -150,17 +176,17 @@ int task_detach(int thid);
 
 void task_yield();
 
-void task_switch(void);
+int task_switch(void);
 
 task_t *get_cur_task(void);
 
 int task_wakeup(task_t *task);
 
-void task_become_ready_head(task_t *task);
+void task_addto_ready_list_tail(task_t *task);
 
-void task_become_ready_tail(task_t *task);
+void task_become_ready(task_t *task);
 
-bool task_can_be_preempted(void);
+int task_need_resched(void);
 
 void task_set_priority(task_t *task, int priority);
 

@@ -1,18 +1,27 @@
-#ifndef IRQ_H
-#define IRQ_H
+#ifndef __CORE_H
+#define __CORE_H
 
 #include "port.h"
 
-#define enter_critical_section() irq_disable_state_save()
+#define AX_TRUE     (0x01)
+#define AX_FALSE    (0x00)
 
-#define leave_critical_section(f) irq_state_restore(f)
+#define AX_WAIT_FOREVER     ((tick_t)-1)
+#define AX_WAIT_NONE        ((tick_t)0)
 
+#define INTERRUPT_NEST_MAX  ((unsigned long)-1)
 
-void enter_interrupt(void);
+#define enter_critical_section() arch_enter_critical_section()
 
-void leave_interrupt(void);
+#define leave_critical_section(f) arch_leave_critical_section(f)
 
-bool in_nested_interrupt(void);
+void interrupt_enter(void);
 
-#endif // IRQ_H
+void interrupt_leave(void);
+
+bool is_interrupt_nested(void);
+
+bool is_in_interrupt(void);
+
+#endif // __CORE_H
 

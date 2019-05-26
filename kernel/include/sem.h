@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include <list.h>
-#include <timer.h>
+#include <tick.h>
 
 #define SEM_MAGIC   (0x2de89acf)
 
@@ -15,8 +15,8 @@ extern "C" {
 #define     SEM_AGAIN          (2)
 
 typedef struct sem {
-    int magic;
-    int cnt;
+    uint32_t magic;
+    int32_t cnt;
     list_head_t wait_list;
 } sem_t;
 

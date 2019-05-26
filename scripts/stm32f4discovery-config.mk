@@ -21,7 +21,7 @@ export AS
 AR := $(TOOLCHAIN)ar
 export AR
 
-LD := $(TOOLCHAIN)ld
+LD := $(TOOLCHAIN)gcc
 export LD
 
 OBJCOPY := $(TOOLCHAIN)objcopy

@@ -28,6 +28,6 @@ void create_idle_task(void)
                idle_main, NULL,
                idle_task_stack,
                IDLE_TASK_STACK_SIZE,
-               0, TASK_AUTO_RUN);
+               0, TF_AUTO_RUN);
 }
 
