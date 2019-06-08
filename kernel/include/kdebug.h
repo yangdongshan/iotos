@@ -95,6 +95,7 @@ int kdebug_print(const char *fmt, ...);
 #define KASSERT(cond) \
     do { \
         if (!(cond)) { \
+			intrpt_disable(); \
             kdebug_print("[%s:%d] assert (%s) failed\n", __FILE__, __LINE__, #cond); \
             while (1); \
         } \

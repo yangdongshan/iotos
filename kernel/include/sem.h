@@ -8,11 +8,13 @@ extern "C" {
 #include <list.h>
 #include <tick.h>
 
-#define SEM_MAGIC   (0x2de89acf)
+#define SEM_MAGIC   (0xFFFFFF02)
 
 #define     SEM_OK             (0)
 #define     SEM_TIMEOUT        (1)
 #define     SEM_AGAIN          (2)
+
+#define     SEM_CNT_THRESHOLD  (0xFFFFUL)
 
 typedef struct sem {
     uint32_t magic;
@@ -26,7 +28,8 @@ int sem_init(sem_t *sem, int val);
 
 int sem_wait(sem_t *sem);
 
-int sem_timedwait(sem_t *sem, int ms);
+int sem_timedwait(sem_t *sem, tick_t ticks);
+
 
 int sem_trywait(sem_t *sem);
 

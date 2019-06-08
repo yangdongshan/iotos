@@ -2,6 +2,7 @@
 #include <err.h>
 #include <irq.h>
 #include <task.h>
+#include <tick.h>
 #include <sched.h>
 #include <kdebug.h>
 
@@ -69,23 +70,45 @@ static void clear_runqueue_bit(int priority)
     runqueue_bitmap[word] &= ~(1 << bit);
 }
 
-void task_list_add_priority(struct list_node *head, task_t *task)
+int task_pend_ret_code_convert(int pend_ret_code)
+{
+	int ret;
+
+	switch (pend_ret_code) {
+		case PEND_WAKEUP:
+		case PEND_RESUME:
+			ret = ERR_OK;
+			break;
+		case PEND_TIMEOUT:
+			ret = ERR_WAIT_TIMEOUT;
+			break;
+		case PEND_INT:
+			ret = ERR_INT;
+			break;
+		default:
+			KASSERT(0);
+	}
+
+	return ret;
+}
+
+void task_list_add_prio(struct list_node *head, struct list_node *node, int prio)
 {
     task_t *iter;
 
     if (list_is_empty(head)){
-        list_add_head(head, &task->node);
+        list_add_head(head, node);
         return;
     }
 
     list_foreach_entry(head, iter, task_t, node) {
-        if (iter->prio < task->prio) {
-            list_add_before(&iter->node, &task->node);
+        if (iter->prio < prio) {
+            list_add_before(&iter->node, node);
             return;
         }
     }
 
-    list_add_tail(head, &task->node);
+    list_add_tail(head, node);
 }
 
 void task_list_add_head(struct list_node *head, task_t *task)
@@ -107,6 +130,19 @@ static void task_addto_ready_list_head(task_t *task)
     list_add_head(&g_ready_list[task->prio], &task->node);
     set_runqueue_bit(task->prio);
 }
+
+void task_ready_list_remove(task_t *task)
+{
+	KDBG("task %s remove from ready list\r\n", task->name);
+    KASSERT(task->state == TS_READY || task->state == TS_RUNNING);
+    KASSERT(list_in_list(&task->node));
+
+    list_delete(&task->node);
+    if (list_is_empty(&g_ready_list[task->prio])) {
+        clear_runqueue_bit(task->prio);
+    }
+}
+
 
 void task_addto_ready_list_tail(task_t *task)
 {
@@ -134,24 +170,32 @@ static inline void set_cur_task(task_t *task)
 }
 */
 
-void task_set_priority(task_t *task, int prio)
+/* This API just change the task's running prio, not the task's origin prio */
+void task_set_prio(task_t *task, int prio)
 {
     switch (task->state) {
         case TS_READY:
-            list_delete(&task->node);
-            clear_runqueue_bit(task->origin_prio);
+		case TS_RUNNING:
+			task_ready_list_remove(task);
             task->prio = prio;
             task_addto_ready_list_tail(task);
             break;
 
-        default:
-            task->prio = prio;
-            break;
+		case TS_PEND_MUTEX:
+		case TS_PEND_MUTEX_SUSPEND:
+		case TS_PEND_SEM:
+		case TS_PEND_SEM_SUSPEND:
+		case TS_PEND_SLEEP:
+		case TS_PEND_SLEEP_SUSPEND:
+			task->prio = prio;
+			break;
+
+        default: KASSERT(0);
     }
 
 }
 
-void task_restore_priority(task_t *task)
+void task_restore_prio(task_t *task)
 {
     switch (task->state) {
         case TS_READY:
@@ -193,11 +237,9 @@ static int start_entry(void *arg)
     return ret;
 }
 
-static void task_grave(void)
+static void task_grave(int exit_code)
 {
-    task_t *cur = get_cur_task();
-
-    KASSERT(0);
+	task_exit(exit_code);
 }
 
 static void task_setup_initial_stack(task_t *task)
@@ -219,12 +261,25 @@ static void task_setup_initial_stack(task_t *task)
     task->stack = (addr_t)cf;
 }
 
+task_t* get_prefer_task(void)
+{
+    task_t *task;
 
-static inline void task_addto_suspend_list(task_t *task)
+    int highest_prio = get_prefer_task_priority();
+
+	KASSERT(highest_prio >= 0 && highest_prio <= LOWEST_TASK_PRIORITY);
+
+    KASSERT(!list_is_empty(&g_ready_list[highest_prio]));
+
+    task = list_first_entry(&g_ready_list[highest_prio], task_t, node);
+
+    return task;
+}
+
+void task_addto_suspend_list(task_t *task)
 {
     KASSERT(!list_in_list(&task->node));
 
-    task->state = TS_SUSPENDED;
     list_add_tail(&g_suspend_list, &task->node);
 
 }
@@ -235,10 +290,10 @@ static void task_become_suspended(task_t *task)
     KDBG("task %s state %d insert into suspended list\r\n",
             task->name, task->state);
 
-    KASSERT(task->state != TS_SUSPENDED);
+    KASSERT(task->state != TS_SUSPEND);
     KASSERT(!list_in_list(&task->node));
 
-    task->state = TS_SUSPENDED;
+    task->state = TS_SUSPEND;
     list_add_tail(&g_suspend_list, &task->node);
     set_runqueue_bit(task->prio);
 }
@@ -259,17 +314,6 @@ void task_become_ready(task_t *task)
     set_runqueue_bit(task->prio);
 }
 
-static void task_ready_list_remove(task_t *task)
-{
-    KASSERT(task->state == TS_READY);
-    KASSERT(!list_in_list(&task->node));
-
-    list_delete(&task->node);
-    if (list_is_empty(&g_ready_list[task->prio])) {
-        clear_runqueue_bit(task->prio);
-    }
-}
-
 int task_wakeup(task_t *task)
 {
     irqstate_t state;
@@ -284,9 +328,6 @@ int task_wakeup(task_t *task)
 }
 
 
-
-
-
 int _task_suspend(task_t *task)
 {
     irqstate_t state;
@@ -295,26 +336,32 @@ int _task_suspend(task_t *task)
     switch (task->state) {
 		case TS_INIT:
 			break;
+
         case TS_READY:
             list_delete(&task->node);
+			task->state = TS_SUSPEND;
+			list_add_tail(&g_suspend_list, &task->node);
 			break;
+
         case TS_RUNNING:
 			list_delete(&task->node);
+			task->state = TS_SUSPEND;
+		    list_add_tail(&g_suspend_list, &task->node);
 			resched = 1;
 			break;
-        case TS_PEND_SEM:
+
 		case TS_PEND_MUTEX:
-			list_delete(&task->node);
-			tick_cancel(task);
+			task->state = TS_PEND_MUTEX_SUSPEND;
 			break;
-        case TS_SUSPENDED:
+
+		case TS_PEND_SEM:
+			task->state = TS_PEND_SEM_SUSPEND;
+			break;
+
+        case TS_SUSPEND:
         default:
             goto out;
     }
-
-
-	list_add_tail(&g_suspend_list, &task->node);
-	task->state = TS_SUSPENDED;
 
 out:
 
@@ -324,10 +371,20 @@ out:
 int task_suspend(task_t *task)
 {
 	irqstate_t state;
-	int ret;
-	
+	int ret = ERR_OK;
+
 	state = enter_critical_section();
-	ret = _task_suspend(task);
+	if (task->flags & TF_IDLE_TASK) {
+		ret = -ERR_SUSPEND_IDLE;
+		goto out;
+	}
+
+	if (_task_suspend(task) == 1) {
+		ret = task_switch();
+		goto out;
+	}
+
+out:
 	leave_critical_section(state);
 
 	return ret;
@@ -351,32 +408,93 @@ void task_yield(void)
 int task_resume(task_t *task)
 {
     irqstate_t state;
-    bool resched = false;
+	int ret = ERR_OK;
 
     if (task == NULL)
         return ERR_OK;
 
     state = enter_critical_section();
 
-    if (task->state == TS_SUSPENDED) {
-        list_delete(&task->node);
-        task->state = TS_READY;
-        task_addto_ready_list_head(task);
-        resched = true;
-    }
+	switch (task->state) {
+		case TS_SUSPEND:
+			list_delete(&task->node);
+			task_become_ready(task);
+			task->pend_ret_code = PEND_RESUME;
+			ret = task_switch();
+			goto out;
+		case TS_PEND_SLEEP_SUSPEND:
+			task->state = TS_PEND_SLEEP;
+			goto out;
+		case TS_PEND_MUTEX_SUSPEND:
+			task->state = TS_PEND_MUTEX;
+			goto out;
+		case TS_PEND_MUTEX_TIMEOUT_SUSPEND:
+			/* delete task from g_suspend_list */
+			list_delete(&task->node);
+			task_become_ready(task);
+			ret = task_switch();
+			goto out;
+		default:
+			KASSERT(0);
 
+	}
+
+out:
     leave_critical_section(state);
 
-    if (resched == true) {
-        task_yield();
-    }
-
-    return ERR_OK;
+    return ret;
 }
 
-int task_exit(int task_id)
+int task_exit(int exit_code)
 {
-    return ERR_OK;
+	irqstate_t state;
+    task_t *cur;
+	int ret = ERR_OK;
+
+	state = enter_critical_section();
+
+	if (is_in_interrupt()) {
+		ret = ERR_IN_INTRPT;
+		goto out;
+	}
+
+	if (IS_SCHED_LOCKED()) {
+		ret = ERR_SCHED_LOCKED;
+		goto out;
+	}
+
+    cur = get_cur_task();
+
+	// it's safe to run the task even if the
+	// the task's stack and task struct is
+	// released to heap as the interrupt is
+	// disabled.
+	if (cur->flags & TF_STACK_MM) {
+		// free task stack
+	}
+
+	if (cur->flags & TF_TASK_MM) {
+		// free task struct
+	}
+
+	task_ready_list_remove(cur);
+	cur->state = TS_TASK_DEAD;
+
+	// TODO: check whether the task hols mutex,sem
+
+	g_cur_task = NULL;
+	g_new_task = get_prefer_task();
+
+	arch_context_switch();
+
+	leave_critical_section(state);
+
+	KASSERT(0);
+
+out:
+	leave_critical_section(state);
+
+	return ret;
 }
 
 int task_join(int task_id)
@@ -385,24 +503,11 @@ int task_join(int task_id)
 }
 
 
-task_t* get_prefer_task(void)
-{
-    task_t *task;
 
-    int highest_prio = get_prefer_task_priority();
-
-	KASSERT(highest_prio >= 0 && highest_prio <= LOWEST_TASK_PRIORITY);
-
-    KASSERT(!list_is_empty(&g_ready_list[highest_prio]));
-
-    task = list_first_entry(&g_ready_list[highest_prio], task_t, node);
-
-    return task;
-}
 
 int task_need_resched(void)
 {
-	task_t *cur = get_cur_task;
+	task_t *cur = get_cur_task();
 	int highest_prio = get_prefer_task_priority();
 
 	return (highest_prio < cur->prio)? 1: 0;
@@ -414,24 +519,25 @@ int task_sleep(tick_t ticks)
 	task_t *cur;
 	tick_t now;
 	int ret;
-	
+
 	state = enter_critical_section();
 
 	cur = get_cur_task();
 	now = get_sys_tick();
 
-	cur->pend_time = now;
 	cur->pend_timeout = now + ticks;
 	cur->pend_ret_code = PEND_OK;
-	cur->state = TS_PEND_SLEEP;
+
+	task_ready_list_remove(cur);
     tick_list_insert(cur);
+	cur->state = TS_PEND_SLEEP;
 	ret = task_switch();
 	leave_critical_section(state);
 
-	if (ret < 0) {
+	if (ret != ERR_OK) {
 		return ret;
 	}
-	
+
 	state = enter_critical_section();
 	ret = cur->pend_ret_code;
 	leave_critical_section(state);
@@ -439,7 +545,7 @@ int task_sleep(tick_t ticks)
 	if (ret == PEND_TIMEOUT)
 		return ERR_OK;
 
-	return ERR_OK;
+	return ret;
 }
 
 /** 1. should be invoked with interrupt disabled
@@ -448,7 +554,7 @@ int task_sleep(tick_t ticks)
 int task_switch(void)
 {
     if (is_interrupt_nested())
-        return -ERR_INT_NESTED;
+        return -ERR_INTRPT_NESTED;
 
 	if (IS_SCHED_LOCKED())
 		return -ERR_SCHED_LOCKED;
@@ -461,7 +567,6 @@ int task_switch(void)
     if (new == cur)
         return;
 
-    new->time_remain = new->time_slice;
     g_new_task = new;
     arch_context_switch();
 
@@ -514,6 +619,8 @@ int task_create(task_t *task,
 		return -ERR_INV_ARG;
 	}
 
+
+
     memset(task, 0, sizeof(*task));
     memset(stack, 0, stack_size);
 
@@ -537,11 +644,20 @@ int task_create(task_t *task,
 
     state = enter_critical_section();
 
+	if (prio == LOWEST_TASK_PRIORITY) {
+		if (!list_is_empty(&g_ready_list[LOWEST_TASK_PRIORITY])) {
+			leave_critical_section(state);
+			return -ERR_IDLE_EXITS;
+		} else {
+			task->flags |= TF_IDLE_TASK;
+		}
+	}
+
     if ((task->flags & TF_AUTO_RUN) != 0) {
         task_become_ready(task);
     } else {
        	list_add_tail(&g_suspend_list, &task->node);
-		task->state = TS_SUSPENDED;
+		task->state = TS_SUSPEND;
     }
 
     leave_critical_section(state);

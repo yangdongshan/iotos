@@ -44,3 +44,8 @@ endmenu # Kernel Configuration
 menu "Debug Options"
 source "kernel/kdebug/Kconfig"
 endmenu # Debug Options
+
+menu "Applications"
+source "app/Kconfig"
+endmenu # Application
+

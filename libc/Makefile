@@ -1,8 +1,10 @@
+include $(ROOTDIR)/.config
+
 # add extra CFLAGS
 CFLAGS +=
 
 # add .c files
-CSRC:= string.c \
+CSRC:= string.c
 
 # add .S files
 ASMSRC:=

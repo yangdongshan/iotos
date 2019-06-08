@@ -62,6 +62,7 @@ ARFLAGS := rcs
 LDFLAGS := -nostartfiles \
 	       -nodefaultlibs
 
+
 LINKER_FILE := $(ROOTDIR)/board/$(BOARD)/src/stm32_flash.ld
 
 

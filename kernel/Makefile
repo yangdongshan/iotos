@@ -1,3 +1,5 @@
+include $(ROOTDIR)/.config
+
 # add extra CFLAGS
 CFLAGS +=
 
@@ -8,6 +10,8 @@ CSRC:= irq.c \
 	   tick.c \
 	   idle.c \
 	   init.c \
+	   mutex.c \
+	   sem.c
 
 # add .S files
 ASMSRC:=

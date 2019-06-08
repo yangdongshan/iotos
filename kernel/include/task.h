@@ -3,7 +3,6 @@
 
 #include <port.h>
 #include <list.h>
-#include <tick.h>
 
 #ifndef CONFIG_MAX_TASK_NAME_LEN
 #define MAX_TASK_NAME_LEN (32)
@@ -38,8 +37,10 @@
 #endif
 
 
-#define TF_IDLE_TASK  0x01u
-#define TF_AUTO_RUN   0x02u
+#define TF_IDLE_TASK  0x01u /**< idle task */
+#define TF_AUTO_RUN   0x02u /**< task auto run */
+#define TF_TASK_MM    0x04u /**< task struct from heap */
+#define TF_STACK_MM   0X08u /**< task stack from heap */
 
 
 #define TF_RESCHED      (1ul << 31)
@@ -49,60 +50,62 @@
 
 typedef int (*task_entry_t)(void *arg);
 
-#define TS_INIT           				(0x00UL)	
+#define TS_INIT           				(0x00UL)
 
 #define TS_READY          				(0x01UL)
 
 #define TS_RUNNING        				(0x02UL)
 
-#define TS_SUSPENDED      				(0x03UL)
+#define TS_SUSPEND       				(0x03UL)
 
+/* task is waiting for mutex */
 #define TS_PEND_MUTEX     			    (0x04UL)
-#define TS_PEND_MUTEX_SUSPEND			(0x05UL)
-#define TS_PEND_MUTEX_TICK				(0x06UL)
-#define TS_PEND_MUTEX_TICK_SUSPEND		(0x07UL)
 
-#define TS_PEND_SEM						(0x08UL)
-#define TS_PEND_SEM_SUSPEND				(0x09UL)
-#define TS_PEND_SEM_TICK				(0x0AUL)
-#define TS_PEND_SEM_TICK_SUSPEND		(0x0BUL)
+/* task is suspend while waiting for mutex */
+#define TS_PEND_MUTEX_SUSPEND			(0x05UL)
+
+/* task is suspened by waiting for mutex timeout */
+#define TS_PEND_MUTEX_TIMEOUT_SUSPEND   (0x06UL)
+
+#define TS_PEND_SEM						(0x07UL)
+#define TS_PEND_SEM_SUSPEND				(0x08UL)
+#define TS_PEND_SEM_TIMEOUT_SUSPEND     (0x09UL)
+
 
 // TODO: pend queue, event
 
-#define TS_PEND_SLEEP          			(0x14UL)
-#define TS_PEND_SLEEP_SUSPEND  			(0x15UL)
+#define TS_PEND_SLEEP          			(0x0AUL)
+#define TS_PEND_SLEEP_SUSPEND  			(0x0BUL)
 
-#define TASK_DEAD           			(0x16UL)
-
+#define TS_TASK_DEAD           			(0x0CUL)
 
 #define PEND_OK          (0x00UL)
 #define PEND_TIMEOUT     (0x01UL)
 #define PEND_WAKEUP      (0x02UL)
-#define PEND_INT         (0x03UL)
-#define PEND_CANCEL      (0x04UL)
+#define PEND_RESUME      (0x03UL)
+#define PEND_INT         (0x04UL)
+#define PEND_CANCEL      (0x05UL)
+
 
 typedef struct task {
-    addr_t stack;
+    void *stack;
 
     struct list_node node;
 
     // assume stack grows downside
-    addr_t sp_alloc_addr;
-    unsigned long stack_size;
+    void *sp_alloc_addr;
+    size_t stack_size;
 
     // priority of the task
-    int prio;
+    uint8_t prio;
 
     // original priority
-    int origin_prio;
-
-    // task sched policy
-    unsigned int sched_policy;
+    uint8_t origin_prio;
 
     // time slice assigned to the task
-    unsigned int time_slice;
+    uint32_t time_slice;
     // remain time for the task
-    unsigned int time_remain;
+    uint32_t time_remain;
 
     // task entry point
     task_entry_t start_entry;
@@ -117,22 +120,21 @@ typedef struct task {
     unsigned long switch_count;
 #endif
 
-    unsigned long state;
+    uint16_t state;
 
     // misc flags
-    unsigned long flags;
+    uint16_t flags;
+
+	// the node to be linked in mutex/sem/queue waiter list
+	struct list_node pend_node;
 
     // point to the list head where the task node is pending on
     list_head_t *pend_list;
 
-	// when the task is blocked
-	tick_t pend_time;
 	// how many ticks the task will block
 	tick_t pend_timeout;
-	
-    int pend_ret_code;
 
-    list_head_t wait_task_list;
+    int pend_ret_code;
 
     unsigned int exit_code;
 
@@ -176,6 +178,8 @@ int task_detach(int thid);
 
 void task_yield();
 
+int task_exit(int exit_code);
+
 int task_switch(void);
 
 task_t *get_cur_task(void);
@@ -184,14 +188,20 @@ int task_wakeup(task_t *task);
 
 void task_addto_ready_list_tail(task_t *task);
 
+void task_ready_list_remove(task_t *task);
+
+void task_addto_suspend_list(task_t *task);
+
 void task_become_ready(task_t *task);
 
 int task_need_resched(void);
 
-void task_set_priority(task_t *task, int priority);
+void task_set_prio(task_t *task, int priority);
 
-void task_restore_priority(task_t *task);
+void task_restore_prio(task_t *task);
 
-void task_list_add_priority(struct list_node *head, task_t *task);
+void task_list_add_prio(struct list_node *head, struct list_node *node, int prio);
+
+int task_pend_ret_code_convert(int pend_ret_code);
 
 #endif

@@ -4,7 +4,8 @@
 #include <task.h>
 #include <list.h>
 #include <mm.h>
-#include <timer.h>
+#include <tick.h>
+#include <err.h>
 #include <kdebug.h>
 #include <string.h>
 
@@ -22,140 +23,145 @@ int sem_init(sem_t *sem, int val)
     return ret;
 }
 
-int sem_wait(sem_t *sem)
+static int _sem_wait(sem_t *sem, tick_t ticks)
 {
-    int ret = SEM_OK;
+    task_t *cur;
     irqstate_t state;
+	tick_t now;
+    int ret;
 
     KASSERT(sem != NULL);
     KASSERT(sem->magic == SEM_MAGIC);
 
     state = enter_critical_section();
 
-    task_t *cur = get_cur_task();
-
-    sem->cnt--;
-    KDBG("task %s wait sem, val %d\r\n", cur->name, sem->cnt);
-
-    if (sem->cnt < 0) {
-        cur->state = TASK_PENDING;
-        cur->pend_ret_code = TASK_PEND_NONE;
-        cur->pending_list = &sem->wait_list;
-        task_list_add_priority(&sem->wait_list, cur);
-        task_switch();
-        cur->pending_list = NULL;
+    /* sem sholdn't wait in interrupt */
+    if (is_in_interrupt() == true) {
+        ret = -ERR_IN_INTRPT;
+        goto out;
     }
 
+	sem->cnt--;
+
+	if (sem->cnt >= 0) {
+		ret = ERR_OK;
+		goto out;
+	}
+
+	if (sem->cnt <= -SEM_CNT_THRESHOLD) {
+		ret = ERR_SEM_OVERFLOW;
+		goto out;
+	}
+
+	/* mutex is not available, the caller won't wait */
+    if (ticks == WAIT_NONE) {
+        ret = ERR_SEM_BUSY;
+        goto out;
+    }
+
+	cur = get_cur_task();
+	now = get_sys_tick();
+	if (ticks != WAIT_FOREVER) {
+		if (now + ticks < now) {
+			ret = ERR_TICK_OVFLOW;
+            goto out;
+		}
+		cur->pend_timeout = now + ticks;
+	} else {
+		cur->pend_timeout = WAIT_FOREVER;
+	}
+
+	cur->pend_list = &sem->wait_list;
+	cur->pend_ret_code = PEND_OK;
+    task_list_add_prio(&sem->wait_list, &cur->pend_node, cur->prio);
+	task_ready_list_remove(cur);
+    tick_list_insert(cur);
+	cur->state = TS_PEND_SEM;
+	ret = task_switch();
     leave_critical_section(state);
 
-    return ret;
+	if (ret != ERR_OK)
+		return ret;
+
+    /* so far, the task is restored */
+    state = enter_critical_section();
+	cur->pend_list = NULL;
+	ret = task_pend_ret_code_convert(cur->pend_ret_code);
+    if (ret == ERR_WAIT_TIMEOUT) {
+        ret = ERR_SEM_TIMEOUT;
+    }
+
+out:
+	leave_critical_section(state);
+
+	return ret;
 }
 
-static int sem_wait_timeout_cb(void *arg)
+int sem_wait(sem_t *sem)
 {
-    task_t *task = (task_t*)arg;
-
-    list_delete(&task->node);
-    task_become_ready(task);
-    KINFO("task %s sem wait timeout\r\n",
-            task->name);
-    task->pend_ret_code = TASK_PEND_TIMEOUT;
-
-    return 0;
+	return _sem_wait(sem, WAIT_FOREVER);
 }
+
 
 /** If wait timeout, return SEM_TIMEOUT
  *  else return SEM_OK
  */
-int sem_timedwait(sem_t *sem, int ms)
+int sem_timedwait(sem_t *sem, tick_t ticks)
 {
-    int ret = SEM_OK;
-    irqstate_t state;
-    task_t *cur;
-
-    KASSERT(sem != NULL);
-    KASSERT(sem->magic == SEM_MAGIC);
-
-    state = enter_critical_section();
-
-    cur = get_cur_task();
-
-    sem->cnt--;
-
-    if (sem->cnt < 0) {
-        cur->state = TASK_PENDING;
-        cur->pend_ret_code = TASK_PEND_NONE;
-        cur->pending_list = &sem->wait_list;
-        task_list_add_priority(&sem->wait_list, cur);
-        register_oneshot_timer(&cur->wait_timer, "sem", ms,
-                            sem_wait_timeout_cb, cur);
-
-        task_switch();
-        cur->pending_list = NULL;
-
-        if (cur->pend_ret_code == TASK_PEND_TIMEOUT) {
-            sem->cnt++;
-            ret = SEM_TIMEOUT;
-        }
-    }
-
-    leave_critical_section(state);
-
-    return ret;
+	return _sem_wait(sem, ticks);
 }
 
 int sem_trywait(sem_t *sem)
 {
-    int ret = SEM_OK;
-    irqstate_t state;
-
-    KASSERT(sem != NULL);
-    KASSERT(sem->magic == SEM_MAGIC);
-
-    state = enter_critical_section();
-
-    if (sem->cnt <= 0) {
-        ret = SEM_AGAIN;
-    } else {
-        sem->cnt--;
-    }
-
-    leave_critical_section(state);
-
-    return ret;
+	return _sem_wait(sem, WAIT_NONE);
 }
 
 int sem_post(sem_t *sem)
 {
-    irqstate_t state;
-    int ret = SEM_OK;
-    task_t *cur;
-    task_t *wakeup;
+	irqstate_t state;
+	task_t *cur;
+	task_t *wakeup;
+	int ret = ERR_OK;
 
-    KASSERT(sem != NULL);
-    KASSERT(sem->magic == SEM_MAGIC);
+	KASSERT(sem != NULL);
+	KASSERT(sem->magic == SEM_MAGIC);
 
-    state = enter_critical_section();
+	state = enter_critical_section();
 
-    cur = get_cur_task();
+	sem->cnt++;
 
-    sem->cnt++;
+	if (sem->cnt >= SEM_CNT_THRESHOLD) {
+		ret = ERR_SEM_OVERFLOW;
+		goto out;
+	}
 
-    KDBG("task %s post sem, val %d\r\n", cur->name, sem->cnt);
+	if (sem->cnt <= 0) {
+		KASSERT(!list_is_empty(&sem->wait_list));
+		wakeup = list_first_entry(&sem->wait_list, task_t, pend_node);
 
-    if (sem->cnt > 0) {
-        ret = SEM_OK;
-    } else {
-        if (!list_is_empty(&sem->wait_list)) {
-            wakeup = list_first_entry(&sem->wait_list, task_t, node);
-            list_delete(&wakeup->node);
-            task_become_ready(wakeup);
-            task_become_ready(cur);
-            task_switch();
-        }
-    }
-    leave_critical_section(state);
+		KASSERT(wakeup->state == TS_PEND_SEM || wakeup->state == TS_PEND_SEM_SUSPEND);
+		/* remove task from tick list */
+		list_delete(&wakeup->node);
 
-    return ret;
+		/* remove task from mutex wait list */
+		list_delete(&wakeup->pend_node);
+
+		wakeup->pend_ret_code = PEND_WAKEUP;
+
+		task_become_ready(wakeup);
+
+		cur = get_cur_task();
+
+		if (cur->prio > wakeup->prio) {
+			ret = task_switch();
+			goto out;
+		}
+	}
+
+out:
+	leave_critical_section(state);
+
+	return ret;
+
 }
 

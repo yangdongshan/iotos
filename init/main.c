@@ -17,6 +17,8 @@ extern void os_run(void);
 task_t sys_init;
 static unsigned char sys_init_stack[SYS_INIT_STACK_SIZE];
 
+extern int app_start(void);
+
 static int sys_init_run(void *arg)
 {
     int ret;
@@ -27,14 +29,7 @@ static int sys_init_run(void *arg)
 
     systick_start();
 
-    while(1) {
-        kdebug_print("%s: sys_init loop %d\r\n", __func__, cnt);
-        cnt++;
-
-        task_sleep(10);
-    }
-
-    return ret;
+    return app_start();
 }
 
 int os_start()

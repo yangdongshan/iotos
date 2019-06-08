@@ -1,3 +1,5 @@
+include $(ROOTDIR)/.config
+
 # add extra CFLAGS
 CFLAGS +=
 

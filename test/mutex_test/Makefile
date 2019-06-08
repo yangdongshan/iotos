@@ -4,15 +4,14 @@ include $(ROOTDIR)/.config
 CFLAGS +=
 
 # add .c files
-CSRC:=
+
+CSRC:= mutex_test.c \
 
 # add .S files
 ASMSRC:=
 
 # add sub-directories
-MODULE:= mem_test \
-         thread_test \
-         mutex_test \
+MODULE:=
 
 
 # include build.mk

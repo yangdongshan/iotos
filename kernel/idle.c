@@ -5,7 +5,7 @@
 #ifdef CONFIG_IDLE_TASK_STACK_SIZE
 #define IDLE_TASK_STACK_SIZE CONFIG_IDLE_TASK_STACK_SIZE
 #else
-#define IDLE_TASK_STACK_SIZE  1024
+#define IDLE_TASK_STACK_SIZE  512
 #endif
 
 static task_t idle_task;
@@ -28,6 +28,6 @@ void create_idle_task(void)
                idle_main, NULL,
                idle_task_stack,
                IDLE_TASK_STACK_SIZE,
-               0, TF_AUTO_RUN);
+               0, TF_AUTO_RUN | TF_IDLE_TASK);
 }
 

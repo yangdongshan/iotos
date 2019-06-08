@@ -24,12 +24,12 @@ struct context_frame {
 
 static inline void irq_enable()
 {
-    __asm__ __volatile__ ("cpsie i:::memory\n");
+    __asm__ __volatile__ ("cpsie i");
 }
 
 static inline void irq_disable()
 {
-   // __asm__ __volatile__ ("cpsid i:::memory\n");
+    __asm__ __volatile__ ("cpsid i");
 }
 
 static inline irqstate_t irq_state_save(void)
@@ -73,6 +73,15 @@ static inline void arch_leave_critical_section(irqstate_t state)
     irq_state_restore(state);
 }
 
+static inline void arch_intrpt_disable(void)
+{
+	irq_disable();
+}
+
+static inline void arch_intrpt_enable(void)
+{
+	irq_enable();
+}
 
 void arch_start_first_task(void);
 

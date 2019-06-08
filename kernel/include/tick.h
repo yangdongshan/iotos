@@ -7,6 +7,10 @@ extern "C" {
 
 #include <list.h>
 #include <typedef.h>
+#include <task.h>
+
+#define WAIT_FOREVER     ((tick_t)-1)
+#define WAIT_NONE        ((tick_t)0)
 
 #define MS2TICKS(ms) ((ms * CONFIG_TICKS_PER_SEC) / 1000)
 
@@ -23,25 +27,12 @@ static inline tick_t get_sys_tick(void)
 }
 
 
-typedef void (*ticker_cb)(void *arg);
-
-typedef struct {
-    struct list_node node;
-    tick_t timeout;
-    ticker_cb ticker_handler;
-    void *arg;
-} ticker_t;
-
 void tick_init_early(void);
+
+void tick_list_insert(task_t *task);
 
 void tick_update(void);
 
-void tick_list_wait(ticker_t *ticker,
-                    tick_t delay_ticks,
-                    ticker_cb *handler,
-                    void *arg);
-
-int tick_cancel(ticker_t *ticker);
 
 #ifdef __cplusplus
 }
