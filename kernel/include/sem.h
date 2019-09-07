@@ -14,7 +14,7 @@ extern "C" {
 #define     SEM_TIMEOUT        (1)
 #define     SEM_AGAIN          (2)
 
-#define     SEM_CNT_THRESHOLD  (0xFFFFUL)
+#define     SEM_CNT_THRESHOLD  (0xFFFF)
 
 typedef struct sem {
     uint32_t magic;

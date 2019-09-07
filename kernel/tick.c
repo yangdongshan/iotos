@@ -103,6 +103,7 @@ void tick_update(void)
                 list_delete(&task->pend_node);
                 sem->cnt++;
                 task_become_ready(task);
+                break;
 			default:
 				KASSERT(0);
 

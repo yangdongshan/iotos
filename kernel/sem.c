@@ -41,14 +41,13 @@ static int _sem_wait(sem_t *sem, tick_t ticks)
         goto out;
     }
 
-	sem->cnt--;
-
-	if (sem->cnt >= 0) {
+	if (sem->cnt > 0) {
+        sem->cnt--;
 		ret = ERR_OK;
 		goto out;
 	}
 
-	if (sem->cnt <= -SEM_CNT_THRESHOLD) {
+	if (sem->cnt + SEM_CNT_THRESHOLD < 0) {
 		ret = ERR_SEM_OVERFLOW;
 		goto out;
 	}
@@ -58,6 +57,7 @@ static int _sem_wait(sem_t *sem, tick_t ticks)
         ret = ERR_SEM_BUSY;
         goto out;
     }
+
 
 	cur = get_cur_task();
 	now = get_sys_tick();
@@ -70,6 +70,8 @@ static int _sem_wait(sem_t *sem, tick_t ticks)
 	} else {
 		cur->pend_timeout = WAIT_FOREVER;
 	}
+
+    sem->cnt--;
 
 	cur->pend_list = &sem->wait_list;
 	cur->pend_ret_code = PEND_OK;
@@ -128,12 +130,12 @@ int sem_post(sem_t *sem)
 
 	state = enter_critical_section();
 
-	sem->cnt++;
-
 	if (sem->cnt >= SEM_CNT_THRESHOLD) {
 		ret = ERR_SEM_OVERFLOW;
 		goto out;
 	}
+
+	sem->cnt++;
 
 	if (sem->cnt <= 0) {
 		KASSERT(!list_is_empty(&sem->wait_list));

@@ -344,7 +344,7 @@ int _task_suspend(task_t *task)
 			break;
 
         case TS_RUNNING:
-			list_delete(&task->node);
+            task_ready_list_remove(task);
 			task->state = TS_SUSPEND;
 		    list_add_tail(&g_suspend_list, &task->node);
 			resched = 1;
@@ -374,6 +374,10 @@ int task_suspend(task_t *task)
 	int ret = ERR_OK;
 
 	state = enter_critical_section();
+    if (task == NULL) {
+        task = get_cur_task();
+    }
+
 	if (task->flags & TF_IDLE_TASK) {
 		ret = -ERR_SUSPEND_IDLE;
 		goto out;
